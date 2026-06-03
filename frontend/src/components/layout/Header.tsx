@@ -48,17 +48,17 @@ export default function Header() {
   const todayTotal = Object.values(agentStatus?.agent2.sent_today ?? {}).reduce((a, b) => a + b, 0)
 
   return (
-    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center px-4 gap-3 shrink-0 z-10">
-      {/* Mobile menu */}
-      <button
-        className="btn-ghost lg:hidden p-2"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        <Menu size={20} />
-      </button>
+    <header className="h-14 md:h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center px-3 md:px-4 gap-2 md:gap-3 shrink-0 z-10">
+      {/* Logo — mobile only (no sidebar) */}
+      <div className="flex items-center gap-2 lg:hidden">
+        <div className="w-7 h-7 rounded-xl bg-primary-500 flex items-center justify-center shrink-0">
+          <span className="text-white font-black text-xs">JA</span>
+        </div>
+        <span className="font-black text-base text-gray-900 dark:text-white">Job Agents</span>
+      </div>
 
-      {/* Global search */}
-      <div className={`relative flex-1 max-w-md transition-all duration-200 ${searchFocus ? 'max-w-lg' : ''}`}>
+      {/* Global search — desktop only */}
+      <div className={`relative hidden md:block flex-1 max-w-md transition-all duration-200 ${searchFocus ? 'max-w-lg' : ''}`}>
         <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         <input
           type="text"
@@ -72,7 +72,7 @@ export default function Header() {
         />
       </div>
 
-      <div className="flex items-center gap-2 mr-auto">
+      <div className="flex items-center gap-1 md:gap-2 mr-auto">
         {/* Today's applications count */}
         <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-sm font-medium">
           <span>{todayTotal}</span>

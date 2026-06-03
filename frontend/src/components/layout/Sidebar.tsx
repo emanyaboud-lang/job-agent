@@ -36,9 +36,11 @@ export default function Sidebar() {
         'fixed top-0 right-0 h-full z-30 flex flex-col',
         'bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800',
         'transition-all duration-300 ease-in-out',
-        sidebarOpen ? 'w-60' : 'w-16',
+        // desktop: show collapsed (w-16) or expanded (w-60)
         'lg:relative lg:translate-x-0',
-        !sidebarOpen && 'max-lg:-translate-x-full max-lg:w-60',
+        sidebarOpen ? 'w-60' : 'lg:w-16',
+        // mobile: hidden by default, slide in from right when open
+        !sidebarOpen ? 'max-lg:translate-x-full max-lg:w-60' : 'max-lg:w-72',
       )}>
         {/* Logo */}
         <div className="h-16 flex items-center px-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
