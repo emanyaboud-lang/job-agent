@@ -47,3 +47,67 @@ app.include_router(interview.router,      prefix="/api/interview-prep", tags=["I
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "version": "1.0.0"}
+
+@app.get("/api/health/full")
+async def health_full():
+    import time
+    results = {}
+
+    # Backend
+    results["backend"] = {"ok": True, "detail": "يعمل", "version": "1.0.0"}
+
+    # Supabase
+    try:
+        from app.services.supabase_service import get_client
+        t0 = time.time()
+        get_client().table("settings").select("id").limit(1).execute()
+        ms = round((time.time() - t0) * 1000)
+        results["supabase"] = {"ok": True, "detail": f"متصلة ({ms}ms)"}
+    except Exception as e:
+        results["supabase"] = {"ok": False, "detail": str(e)[:80]}
+
+    # Gmail
+    try:
+        from app.services.gmail_service import get_gmail_service
+        from app.core.config import settings as cfg
+        if not cfg.GMAIL_REFRESH_TOKEN:
+            results["gmail"] = {"ok": False, "detail": "GMAIL_REFRESH_TOKEN غير مضبوط"}
+        else:
+            svc = get_gmail_service()
+            profile = svc.users().getProfile(userId="me").execute()
+            results["gmail"] = {"ok": True, "detail": f"متصل ({profile.get('emailAddress','')})"}
+    except Exception as e:
+        results["gmail"] = {"ok": False, "detail": str(e)[:80]}
+
+    # Anthropic
+    try:
+        from app.core.config import settings as cfg
+        if not cfg.ANTHROPIC_API_KEY:
+            results["anthropic"] = {"ok": False, "detail": "ANTHROPIC_API_KEY غير مضبوط"}
+        else:
+            import anthropic
+            client = anthropic.Anthropic(api_key=cfg.ANTHROPIC_API_KEY)
+            client.messages.create(model="claude-haiku-4-5-20251001", max_tokens=5,
+                messages=[{"role":"user","content":"hi"}])
+            results["anthropic"] = {"ok": True, "detail": "Claude متصل"}
+    except Exception as e:
+        results["anthropic"] = {"ok": False, "detail": str(e)[:80]}
+
+    # Apify
+    try:
+        from app.core.config import settings as cfg
+        if not cfg.APIFY_TOKEN:
+            results["apify"] = {"ok": False, "detail": "APIFY_TOKEN غير مضبوط"}
+        else:
+            import httpx
+            r = httpx.get("https://api.apify.com/v2/users/me",
+                headers={"Authorization": f"Bearer {cfg.APIFY_TOKEN}"}, timeout=8)
+            if r.status_code == 200:
+                results["apify"] = {"ok": True, "detail": f"متصل ({r.json().get('username','')})"}
+            else:
+                results["apify"] = {"ok": False, "detail": f"HTTP {r.status_code}"}
+    except Exception as e:
+        results["apify"] = {"ok": False, "detail": str(e)[:80]}
+
+    overall = all(v["ok"] for v in results.values())
+    return {"ok": overall, "services": results}

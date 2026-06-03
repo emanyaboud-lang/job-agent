@@ -4,7 +4,18 @@ import { settingsApi, agentsApi } from '@/lib/api'
 import { Settings as SettingsType, City, Platform, PrimaryColor } from '@/types'
 import { useStore } from '@/store/useStore'
 import { applyPrimaryColor } from '@/lib/utils'
-import { Save, Plus, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, Wifi, Database, Mail, Bot, Clock, Globe } from 'lucide-react'
+import { Save, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Wifi, Database, Mail, Bot, Clock, Globe, Zap, Key } from 'lucide-react'
+
+type FullCheckService = { ok: boolean; detail: string }
+type FullCheckResult = { ok: boolean; services: Record<string, FullCheckService> }
+
+const SERVICE_META: Record<string, { label: string; icon: React.ElementType; iconColor: string }> = {
+  backend:   { label: 'الخادم (Backend)',          icon: Wifi,     iconColor: 'text-blue-500' },
+  supabase:  { label: 'قاعدة البيانات (Supabase)', icon: Database, iconColor: 'text-green-500' },
+  gmail:     { label: 'Gmail API',                 icon: Mail,     iconColor: 'text-red-500' },
+  anthropic: { label: 'Claude AI (Anthropic)',      icon: Bot,      iconColor: 'text-violet-500' },
+  apify:     { label: 'Apify (سكرابر)',             icon: Globe,    iconColor: 'text-orange-500' },
+}
 
 const COLOR_OPTIONS: { value: PrimaryColor; label: string; preview: string }[] = [
   { value: 'sky',    label: 'أزرق سماوي', preview: '#0ea5e9' },
@@ -78,6 +89,22 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<'server' | 'general' | 'preferences' | 'limits' | 'signature' | 'followup' | 'notifications'>('server')
   const [newKeyword, setNewKeyword] = useState('')
   const [newBlacklist, setNewBlacklist] = useState('')
+  const [fullCheck, setFullCheck] = useState<FullCheckResult | null>(null)
+  const [checking, setChecking] = useState(false)
+
+  const runFullCheck = async () => {
+    setChecking(true)
+    setFullCheck(null)
+    try {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/health/full')
+      const data = await res.json() as FullCheckResult
+      setFullCheck(data)
+    } catch {
+      setFullCheck({ ok: false, services: { backend: { ok: false, detail: 'تعذّر الاتصال بالخادم تماماً' } } })
+    } finally {
+      setChecking(false)
+    }
+  }
 
   const { data } = useQuery<SettingsType>({
     queryKey: ['settings'],
@@ -162,9 +189,68 @@ export default function Settings() {
       {/* ===== تبويب الخادم ===== */}
       {activeTab === 'server' && (
         <div className="space-y-4">
+
+          {/* زر الفحص الشامل */}
+          <div className="card p-5 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2"><Zap size={16} className="text-yellow-500" />فحص شامل للنظام</h3>
+                <p className="text-xs text-gray-400 mt-0.5">يفحص كل خدمة ويخبرك بالضبط وش يشتغل ووش لا</p>
+              </div>
+              <button onClick={runFullCheck} disabled={checking}
+                className="btn-primary text-sm flex items-center gap-2 px-5 py-2.5 disabled:opacity-60">
+                {checking ? <><RefreshCw size={14} className="animate-spin" />جارٍ الفحص...</> : <><Zap size={14} />فحص الآن</>}
+              </button>
+            </div>
+
+            {/* نتائج الفحص */}
+            {checking && (
+              <div className="space-y-2">
+                {['backend','supabase','gmail','anthropic','apify'].map(k => (
+                  <div key={k} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl animate-pulse">
+                    <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+                      <div className="h-2.5 bg-gray-100 dark:bg-gray-600 rounded w-48" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {fullCheck && !checking && (
+              <div className="space-y-3">
+                <div className={`flex items-center gap-2 p-3 rounded-xl font-medium text-sm ${fullCheck.ok ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
+                  {fullCheck.ok ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                  {fullCheck.ok ? 'كل الخدمات تعمل بشكل صحيح ✅' : 'بعض الخدمات تحتاج مراجعة ⚠️'}
+                </div>
+                <div className="space-y-2">
+                  {Object.entries(fullCheck.services).map(([key, svc]) => {
+                    const meta = SERVICE_META[key] ?? { label: key, icon: Key, iconColor: 'text-gray-500' }
+                    const Icon = meta.icon
+                    return (
+                      <div key={key} className={`flex items-center gap-3 p-3.5 rounded-xl border ${svc.ok ? 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30' : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30'}`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${svc.ok ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                          <Icon size={17} className={svc.ok ? 'text-green-600' : 'text-red-500'} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{meta.label}</p>
+                          <p className={`text-xs mt-0.5 truncate ${svc.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>{svc.detail}</p>
+                        </div>
+                        <span className={`text-xs font-bold shrink-0 ${svc.ok ? 'text-green-600' : 'text-red-500'}`}>
+                          {svc.ok ? '✅ متصل' : '❌ خطأ'}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="card p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">حالة الاتصال</h3>
+              <h3 className="font-semibold">حالة الاتصال السريع</h3>
               <button onClick={() => { refetchHealth(); refetchAgents() }} className="btn-ghost text-xs px-2 py-1 flex items-center gap-1">
                 <RefreshCw size={12} />تحديث
               </button>
