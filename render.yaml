@@ -33,3 +33,13 @@ services:
         sync: false
       - key: PYTHONPATH
         value: /opt/render/project/src/backend
+
+  - type: web
+    name: job-agents-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
