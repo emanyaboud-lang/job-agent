@@ -55,9 +55,7 @@ export default function Settings() {
     queryKey: ['settings'],
     queryFn: () => settingsApi.get() as Promise<SettingsType>,
     retry: false,
-    // show defaults if backend is unavailable
-    onError: () => {},
-  } as Parameters<typeof useQuery>[0])
+  })
 
   useEffect(() => {
     if (data && Object.keys(data).length > 0) setSettings(prev => ({ ...prev, ...data }))
