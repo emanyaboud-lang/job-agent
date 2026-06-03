@@ -1,0 +1,54 @@
+# ⚠️ مهم جداً — لا ترفعي هذه الملفات على GitHub
+.env
+*.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/build/
+.npm/
+
+# لقطات الشاشة المؤقتة
+screenshotter/
+screenshot*.png
+shot_*.png
+
+# ملفات الـ CV المرفوعة
+/tmp/
+backend/uploads/
+*.pdf
+*.docx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# السكريبتات المؤقتة
+fix_gmail.py
+upload_cv.py

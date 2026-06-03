@@ -1,0 +1,295 @@
+import { useState, useCallback, useRef } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { cvApi } from '@/lib/api'
+import { CVFile } from '@/types'
+import { cn, formatDate } from '@/lib/utils'
+import {
+  Upload, FileText, Star, Trash2, Download, Send,
+  CheckCircle2, ChevronDown, ChevronUp, Bot, User,
+  RefreshCw, TrendingUp, AlertCircle, Lightbulb,
+} from 'lucide-react'
+
+export default function CV() {
+  const qc = useQueryClient()
+  const [activeTab, setActiveTab] = useState<'files' | 'analysis' | 'chat' | 'skills'>('files')
+  const [chatInput, setChatInput] = useState('')
+  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([])
+  const [chatLoading, setChatLoading] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+
+  const { data: cvFiles = [], isLoading } = useQuery<CVFile[]>({
+    queryKey: ['cv'],
+    queryFn: () => cvApi.list() as Promise<CVFile[]>,
+  })
+
+  const primary = cvFiles.find(f => f.is_primary)
+
+  const { data: skillGap = [] } = useQuery({
+    queryKey: ['skill-gap'],
+    queryFn: () => cvApi.skillGap() as Promise<{ skill: string; demand_level: string; you_have: boolean; suggestion?: string }[]>,
+    enabled: activeTab === 'skills',
+  })
+
+  const uploadMut = useMutation({
+    mutationFn: (file: File) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return cvApi.upload(fd)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cv'] }),
+  })
+
+  const analyzeMut = useMutation({
+    mutationFn: (id: string) => cvApi.analyze(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cv'] }),
+  })
+
+  const setPrimary = useMutation({
+    mutationFn: (id: string) => cvApi.setPrimary(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cv'] }),
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => cvApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cv'] }),
+  })
+
+  const handleFile = useCallback((file: File) => {
+    if (!file) return
+    uploadMut.mutate(file)
+  }, [uploadMut])
+
+  const sendChat = async () => {
+    const msg = chatInput.trim()
+    if (!msg || chatLoading) return
+    setChatInput('')
+    const history = [...chatHistory, { role: 'user' as const, content: msg }]
+    setChatHistory(history)
+    setChatLoading(true)
+    try {
+      const res = await cvApi.chat(msg, chatHistory) as { reply: string }
+      setChatHistory([...history, { role: 'assistant', content: res.reply }])
+    } catch {
+      setChatHistory([...history, { role: 'assistant', content: 'حدث خطأ، حاولي مرة أخرى.' }])
+    } finally {
+      setChatLoading(false)
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    }
+  }
+
+  const TABS = [
+    { id: 'files',    label: 'الملفات' },
+    { id: 'analysis', label: 'التحليل' },
+    { id: 'chat',     label: 'شات AI' },
+    { id: 'skills',   label: 'فجوة المهارات' },
+  ]
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      <h1 className="font-bold text-xl">السيرة الذاتية</h1>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl w-fit">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setActiveTab(t.id as typeof activeTab)}
+            className={cn('px-4 py-2 rounded-xl text-sm font-medium transition-all',
+              activeTab === t.id ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300')}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Files tab */}
+      {activeTab === 'files' && (
+        <div className="space-y-4">
+          {/* Upload zone */}
+          <div
+            className={cn('border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer',
+              dragging ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 hover:bg-gray-50 dark:hover:bg-gray-800/50')}
+            onDragOver={e => { e.preventDefault(); setDragging(true) }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
+            onClick={() => fileRef.current?.click()}
+          >
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]) }} />
+            {uploadMut.isPending ? (
+              <div className="flex items-center justify-center gap-2 text-primary-500">
+                <RefreshCw size={24} className="animate-spin" />
+                <span>جاري الرفع والتحليل...</span>
+              </div>
+            ) : (
+              <>
+                <Upload size={32} className="mx-auto mb-3 text-gray-400" />
+                <p className="font-medium text-gray-700 dark:text-gray-300">اسحبي الملف هنا أو انقري للاختيار</p>
+                <p className="text-sm text-gray-400 mt-1">PDF, Word, صورة (الجديد يصبح الأساسي)</p>
+              </>
+            )}
+          </div>
+
+          {/* CV files list */}
+          {isLoading ? <div className="card h-32 animate-pulse bg-gray-100 dark:bg-gray-800" /> : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {cvFiles.map(cv => (
+                <div key={cv.id} className={cn('card p-4 space-y-3', cv.is_primary && 'border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/10')}>
+                  <div className="flex items-start gap-3">
+                    <FileText size={24} className={cn('shrink-0 mt-0.5', cv.is_primary ? 'text-primary-500' : 'text-gray-400')} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">{cv.version_name || cv.file_name}</p>
+                        {cv.is_primary && <span className="badge-sky text-xs flex items-center gap-1"><Star size={10} />أساسي</span>}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(cv.uploaded_at)}</p>
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      {!cv.is_primary && (
+                        <button onClick={() => setPrimary.mutate(cv.id)} className="btn-ghost p-1.5 text-xs" title="تعيين كأساسي">
+                          <Star size={14} />
+                        </button>
+                      )}
+                      <button onClick={() => analyzeMut.mutate(cv.id)} disabled={analyzeMut.isPending} className="btn-ghost p-1.5" title="تحليل">
+                        <RefreshCw size={14} className={analyzeMut.isPending ? 'animate-spin' : ''} />
+                      </button>
+                      <button onClick={() => deleteMut.mutate(cv.id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-600" title="حذف">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {cv.analysis && (
+                    <div className="space-y-2 bg-white dark:bg-gray-900 rounded-xl p-3">
+                      <AnalysisBit label="المهارات" items={cv.analysis.skills?.slice(0, 5)} color="badge-blue" />
+                      <AnalysisBit label="الشهادات" items={cv.analysis.certifications} color="badge-green" />
+                      <AnalysisBit label="نقاط القوة" items={cv.analysis.strengths?.slice(0, 3)} color="badge-amber" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Analysis tab */}
+      {activeTab === 'analysis' && primary?.analysis && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[
+            { title: 'المهارات التقنية', items: primary.analysis.tech_skills, color: 'badge-blue' as const },
+            { title: 'المهارات العامة', items: primary.analysis.skills, color: 'badge-sky' as const },
+            { title: 'الشهادات', items: primary.analysis.certifications, color: 'badge-green' as const },
+            { title: 'المشاريع البارزة', items: primary.analysis.projects, color: 'badge-amber' as const },
+          ].map(s => s.items?.length ? (
+            <div key={s.title} className="card p-5">
+              <h3 className="font-semibold mb-3 text-sm">{s.title}</h3>
+              <div className="flex flex-wrap gap-2">
+                {s.items.map(i => <span key={i} className={s.color}>{i}</span>)}
+              </div>
+            </div>
+          ) : null)}
+
+          <div className="card p-5">
+            <h3 className="font-semibold mb-3 text-sm flex items-center gap-2"><TrendingUp size={16} />مقارنة سوق العمل</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{primary.analysis.market_comparison || 'سيتم تحليله عند رفع الـ CV'}</p>
+          </div>
+
+          {primary.analysis.improvements?.length ? (
+            <div className="card p-5 border-amber-200 dark:border-amber-800">
+              <h3 className="font-semibold mb-3 text-sm flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <Lightbulb size={16} />اقتراحات التحسين
+              </h3>
+              <ul className="space-y-2">
+                {primary.analysis.improvements.map((imp, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <AlertCircle size={14} className="text-amber-400 mt-0.5 shrink-0" />
+                    {imp}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      )}
+      {activeTab === 'analysis' && !primary?.analysis && (
+        <div className="card p-12 text-center text-gray-500">
+          <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+          <p>ارفعي السيرة الذاتية ليتم تحليلها تلقائياً</p>
+        </div>
+      )}
+
+      {/* Chat tab */}
+      {activeTab === 'chat' && (
+        <div className="card flex flex-col" style={{ height: '500px' }}>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {chatHistory.length === 0 && (
+              <div className="text-center text-gray-500 mt-8 space-y-3">
+                <Bot size={32} className="mx-auto text-primary-400" />
+                <p className="font-medium">اسأليني عن الـ CV</p>
+                <div className="space-y-2">
+                  {['ما أقوى نقاط CV إيمان؟', 'ما المهارات التي تحتاج تطوير؟', 'كيف أقارن بسوق العمل السعودي؟'].map(q => (
+                    <button key={q} onClick={() => setChatInput(q)} className="block w-full text-right text-xs bg-gray-100 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/20 px-3 py-2 rounded-xl transition-colors">
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {chatHistory.map((m, i) => (
+              <div key={i} className={cn('flex gap-2', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}>
+                <div className={cn('w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1', m.role === 'user' ? 'bg-primary-500 text-white' : 'bg-gray-200 dark:bg-gray-700')}>
+                  {m.role === 'user' ? <User size={13} /> : <Bot size={13} className="text-primary-500" />}
+                </div>
+                <div className={cn('max-w-[80%] rounded-2xl px-3 py-2 text-sm', m.role === 'user' ? 'bg-primary-500 text-white rounded-tr-sm' : 'bg-gray-100 dark:bg-gray-800 rounded-tl-sm')}>
+                  <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                </div>
+              </div>
+            ))}
+            {chatLoading && <div className="text-sm text-gray-400 animate-pulse">يكتب...</div>}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="p-3 border-t border-gray-100 dark:border-gray-800 flex gap-2">
+            <input className="input text-sm py-2" placeholder="اسأليني عن الـ CV..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendChat() }} />
+            <button onClick={sendChat} disabled={!chatInput.trim() || chatLoading} className="btn-primary px-3 py-2 shrink-0">
+              <Send size={15} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Skill gap tab */}
+      {activeTab === 'skills' && (
+        <div className="card p-5 space-y-4">
+          <h3 className="font-semibold flex items-center gap-2"><TrendingUp size={18} className="text-primary-500" />تحليل فجوة المهارات مقارنةً بسوق العمل السعودي</h3>
+          {skillGap.length === 0 ? (
+            <p className="text-gray-500 text-sm">سيظهر التحليل بعد رفع الـ CV</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {skillGap.map((s, i) => (
+                <div key={i} className={cn('flex items-start gap-3 p-3 rounded-xl', s.you_have ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10')}>
+                  <CheckCircle2 size={16} className={s.you_have ? 'text-green-500 mt-0.5 shrink-0' : 'text-red-400 mt-0.5 shrink-0'} />
+                  <div>
+                    <p className="text-sm font-medium">{s.skill}</p>
+                    <p className="text-xs text-gray-500">{s.demand_level === 'high' ? 'طلب عالٍ جداً' : s.demand_level === 'medium' ? 'طلب متوسط' : 'طلب منخفض'}</p>
+                    {s.suggestion && !s.you_have && <p className="text-xs text-primary-600 dark:text-primary-400 mt-1">{s.suggestion}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AnalysisBit({ label, items, color }: { label: string; items?: string[]; color: string }) {
+  if (!items?.length) return null
+  return (
+    <div>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map(i => <span key={i} className={color}>{i}</span>)}
+      </div>
+    </div>
+  )
+}
