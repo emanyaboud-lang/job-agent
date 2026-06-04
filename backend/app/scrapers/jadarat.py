@@ -1,47 +1,62 @@
-"""سكرابر جدارات باستخدام Playwright"""
-import asyncio
+"""سكرابر جدارات — httpx بدون Playwright"""
+import httpx
 from typing import List, Dict
 from datetime import datetime
-from app.scrapers.taqat import normalize_city
+from app.scrapers.taqat import normalize_city, HEADERS, _parse_html_jobs
 
 async def scrape_jadarat(search_keywords: List[str]) -> List[Dict]:
     jobs = []
     try:
-        from playwright.async_api import async_playwright
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers=HEADERS) as client:
             for keyword in search_keywords[:3]:
-                try:
-                    await page.goto(f"https://jadarat.sa/en/jobs?q={keyword}", timeout=30000)
-                    await page.wait_for_selector("[class*='job'], [class*='vacancy']", timeout=10000)
-                    
-                    cards = await page.query_selector_all("[class*='job-card'], [class*='vacancy-item']")
-                    for card in cards[:10]:
-                        try:
-                            title   = await (await card.query_selector("h2, h3, [class*='title']"))?.inner_text() or ""
-                            company = await (await card.query_selector("[class*='company'], [class*='employer']"))?.inner_text() or ""
-                            city    = await (await card.query_selector("[class*='location'], [class*='city']"))?.inner_text() or ""
-                            link    = await (await card.query_selector("a"))?.get_attribute("href") or ""
-                            
-                            if title:
+                # محاولة API
+                for api_url in [
+                    "https://jadarat.com.sa/api/v1/jobs",
+                    "https://api.jadarat.com.sa/jobs",
+                    "https://jadarat.sa/api/jobs",
+                ]:
+                    try:
+                        r = await client.get(api_url, params={"q": keyword, "limit": 15})
+                        if r.status_code == 200:
+                            data = r.json()
+                            items = data.get("jobs") or data.get("data") or data.get("results") or []
+                            for item in (items if isinstance(items, list) else []):
+                                if not isinstance(item, dict):
+                                    continue
+                                title = item.get("title") or item.get("jobTitle") or ""
+                                if not title:
+                                    continue
                                 jobs.append({
-                                    "title": title.strip(),
-                                    "company": company.strip() or "جهة حكومية",
-                                    "city": normalize_city(city),
-                                    "description": f"{title} - {company}",
-                                    "apply_url": f"https://jadarat.sa{link}" if link.startswith("/") else link,
+                                    "title": str(title).strip(),
+                                    "company": str(item.get("company") or item.get("organization") or "جهة حكومية").strip(),
+                                    "city": normalize_city(str(item.get("city") or item.get("location") or "")),
+                                    "description": str(item.get("description") or title)[:500],
+                                    "apply_url": str(item.get("url") or item.get("applyUrl") or "https://jadarat.sa"),
                                     "platform": "jadarat",
                                     "published_at": datetime.utcnow().isoformat(),
                                 })
+                            if jobs:
+                                break
+                    except Exception:
+                        continue
+
+            # محاولة HTML scraping
+            if not jobs:
+                for keyword in search_keywords[:2]:
+                    for url in [
+                        f"https://jadarat.sa/ar/jobs?q={keyword}",
+                        f"https://jadarat.com.sa/jobs?search={keyword}",
+                        f"https://www.jadarat.com.sa/en/jobs?q={keyword}",
+                    ]:
+                        try:
+                            r = await client.get(url)
+                            if r.status_code == 200:
+                                parsed = _parse_html_jobs(r.text, "jadarat")
+                                if parsed:
+                                    jobs.extend(parsed)
+                                    break
                         except Exception:
                             continue
-                except Exception:
-                    continue
-            
-            await browser.close()
     except Exception as e:
-        print(f"[Jadarat Scraper Error] {e}")
-    
+        print(f"[Jadarat] {e}")
     return jobs

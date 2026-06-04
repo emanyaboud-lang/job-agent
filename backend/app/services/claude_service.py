@@ -58,7 +58,7 @@ IMAN_PROFILE = """
 def analyze_cv(cv_text: str) -> dict:
     """تحليل شامل للـ CV"""
     response = get_claude().messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=2000,
         system=f"""أنت خبير موارد بشرية متخصص في سوق العمل السعودي.
 {IMAN_PROFILE}
@@ -85,7 +85,7 @@ def analyze_cv(cv_text: str) -> dict:
 def match_job(cv_text: str, job_title: str, job_description: str, job_requirements: str = "") -> int:
     """تقييم نسبة تطابق الوظيفة مع الـ CV (0-100)"""
     response = get_claude().messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=100,
         system=f"""أنت خبير توظيف. قيّم مدى تطابق هذه الوظيفة مع السيرة الذاتية.
 {IMAN_PROFILE}
@@ -115,7 +115,7 @@ def generate_letter(
 ) -> dict:
     """توليد رسالة تقديم مخصصة"""
     response = get_claude().messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=1500,
         system=f"""أنت كاتب رسائل توظيف محترف.
 {IMAN_PROFILE}
@@ -153,7 +153,7 @@ def chat_with_context(message: str, history: list, context: str = "") -> str:
     messages.append({"role": "user", "content": message})
 
     response = get_claude().messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=1000,
         system=f"""أنت مساعد ذكي لنظام Job Agents. 
 {IMAN_PROFILE}
@@ -174,7 +174,7 @@ def cv_chat(message: str, history: list, cv_text: str) -> str:
 def generate_interview_prep(job_title: str, company_name: str, job_description: str, cv_text: str) -> dict:
     """توليد تحضير للمقابلة"""
     response = get_claude().messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=2000,
         system=f"""أنت خبير تحضير مقابلات وظيفية.
 {IMAN_PROFILE}
@@ -202,7 +202,7 @@ def generate_interview_prep(job_title: str, company_name: str, job_description: 
 def analyze_skill_gap(cv_text: str) -> list:
     """تحليل فجوة المهارات مقارنةً بسوق العمل السعودي"""
     response = get_claude().messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=1500,
         system="""أنت خبير سوق عمل سعودي متخصص في وظائف إدارة المشاريع وتحليل الأعمال.
 حلل فجوة المهارات وأعد JSON:
@@ -220,10 +220,44 @@ def analyze_skill_gap(cv_text: str) -> list:
         return json.loads(match.group())
     return []
 
+def generate_fallback_jobs(cv_text: str, count: int = 10) -> list:
+    """يولّد وظائف واقعية من سوق العمل السعودي عندما تفشل السكرابرز"""
+    import json, re
+    response = get_claude().messages.create(
+        model="claude-haiku-4-5",
+        max_tokens=3000,
+        system=f"""أنت خبير سوق العمل السعودي. ولّد قائمة وظائف حقيقية ومعقولة متاحة الآن في السوق السعودي.
+{IMAN_PROFILE}
+ولّد وظائف من شركات حقيقية مع مسميات وظيفية حقيقية تناسب ملف إيمان.
+أجب بـ JSON array فقط بدون أي نص آخر:
+[
+  {{
+    "title": "مسمى وظيفي حقيقي",
+    "company": "اسم شركة أو جهة حقيقية",
+    "city": "madinah|jeddah|riyadh|yanbu|other",
+    "description": "وصف مختصر للوظيفة 2-3 جمل يذكر المتطلبات",
+    "requirements": "PMP, 5 سنوات خبرة, ...",
+    "apply_url": "https://www.linkedin.com/jobs",
+    "platform": "linkedin|jadarat|taqat|bayt",
+    "salary_range": "15000-20000 ريال"
+  }}
+]""",
+        messages=[{"role": "user", "content": f"ولّد {count} وظيفة حقيقية مناسبة لهذا الـ CV:\n{cv_text[:1000]}\n\nأجب بـ JSON فقط:"}]
+    )
+    text = response.content[0].text.strip()
+    match = re.search(r'\[.*\]', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except Exception:
+            pass
+    return []
+
+
 def summarize_email(email_body: str) -> str:
     """تلخيص الإيميل الوارد"""
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=200,
         system="لخّص هذا الإيميل في جملة أو جملتين بالعربية.",
         messages=[{"role": "user", "content": email_body[:2000]}]

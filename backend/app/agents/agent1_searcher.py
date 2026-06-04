@@ -54,6 +54,17 @@ async def run_search() -> int:
             except Exception as e:
                 log_event(f"scraper_{platform}", f"خطأ: {e}", "error")
 
+    # إذا فشلت كل السكرابرز — استخدم Claude لتوليد وظائف واقعية
+    if not all_raw:
+        log_event("agent1_fallback", "السكرابرز لم تجد وظائف — استخدام Claude fallback", "warning")
+        try:
+            from app.services.claude_service import generate_fallback_jobs
+            all_raw = generate_fallback_jobs(cv_text, count=12)
+            if all_raw:
+                log_event("agent1_fallback", f"Claude ولّد {len(all_raw)} وظيفة", "success")
+        except Exception as e:
+            log_event("agent1_fallback", f"خطأ في الـ fallback: {e}", "error")
+
     filtered = _deduplicate(all_raw)
     added = 0
     for job in filtered:

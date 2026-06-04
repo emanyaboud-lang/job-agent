@@ -40,7 +40,7 @@ def _from_image(path: str) -> str:
         media_type = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         response = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-4-6",
             max_tokens=3000,
             messages=[{
                 "role": "user",

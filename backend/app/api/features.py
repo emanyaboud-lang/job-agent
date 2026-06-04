@@ -13,7 +13,7 @@ async def salary_estimate(body: dict):
     description = body.get("description", "")
     city = body.get("city", "")
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=400,
         system=f"""أنت خبير رواتب في سوق العمل السعودي.
 {IMAN_PROFILE}
@@ -33,7 +33,7 @@ async def company_research(body: dict):
     company_name = body.get("company_name", "")
     job_title = body.get("job_title", "")
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=800,
         system="""أنت محلل أعمال متخصص في السوق السعودي.
 أعد JSON:
@@ -62,7 +62,7 @@ async def cv_hints(body: dict):
         job_context = f"الوظيفة: {job_row.get('title','')}\nالمتطلبات: {job_row.get('requirements','')[:500]}"
 
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=600,
         system=f"""أنت خبير تحسين سير ذاتية.
 {IMAN_PROFILE}
@@ -83,7 +83,7 @@ async def interview_simulate(body: dict):
     answer = body.get("answer", "")
     job_title = body.get("job_title", "")
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=600,
         system=f"""أنت محاور وظائف محترف.
 {IMAN_PROFILE}
@@ -105,7 +105,7 @@ async def interview_questions(job_id: str):
         raise HTTPException(404, "الوظيفة غير موجودة")
     job = r.data
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=1000,
         system=f"""أنت خبير مقابلات.
 {IMAN_PROFILE}
@@ -182,7 +182,7 @@ async def job_summary(body: dict):
     title = body.get("title", "")
     description = body.get("description", "")
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=100,
         system="أنت مساعد توظيف. اكتب ملخصاً واحداً مختصراً بالعربية لا يتجاوز 15 كلمة للوظيفة التالية.",
         messages=[{"role": "user", "content": f"المسمى: {title}\nالوصف: {description[:500]}"}]
@@ -197,7 +197,7 @@ async def fake_job_check(body: dict):
     description = body.get("description", "")
     apply_url = body.get("apply_url", "")
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=200,
         system="""أنت محلل وظائف متخصص في كشف الوظائف المزيفة. حلّل الوظيفة وأعد JSON:
 {"is_fake": bool, "reason": "السبب باللغة العربية", "confidence": رقم_0_إلى_100}""",
@@ -217,7 +217,7 @@ async def fake_job_check(body: dict):
 async def cv_improve(body: dict):
     cv_text = body.get("cv_text", "")
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=1200,
         system=f"""أنت خبير تحسين سير ذاتية للسوق السعودي.
 {IMAN_PROFILE}
@@ -238,7 +238,7 @@ async def cv_improve(body: dict):
 @router.get("/career-paths")
 async def career_paths():
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=800,
         system=f"""أنت مستشار مهني للسوق السعودي.
 {IMAN_PROFILE}
@@ -265,7 +265,7 @@ async def translate(body: dict):
     target = body.get("target", "ar")
     lang = "العربية" if target == "ar" else "الإنجليزية"
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=800,
         system=f"أنت مترجم محترف. ترجم النص التالي إلى {lang} بدقة واحتفظ بالمعنى الوظيفي.",
         messages=[{"role": "user", "content": text[:1500]}]
@@ -279,7 +279,7 @@ async def thank_you_email(body: dict):
     job_title = body.get("job_title", "")
     interviewer_name = body.get("interviewer_name", "Hiring Manager")
     response = get_claude().messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=500,
         system=f"""أنت متخصص في كتابة رسائل الشكر بعد المقابلات.
 {IMAN_PROFILE}

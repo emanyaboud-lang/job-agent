@@ -97,7 +97,7 @@ async def health_full():
         else:
             import anthropic
             client = anthropic.Anthropic(api_key=cfg.ANTHROPIC_API_KEY)
-            client.messages.create(model="claude-haiku-4-5-20251001", max_tokens=5,
+            client.messages.create(model="claude-haiku-4-5", max_tokens=5,
                 messages=[{"role":"user","content":"hi"}])
             results["anthropic"] = {"ok": True, "detail": "Claude متصل"}
     except Exception as e:
