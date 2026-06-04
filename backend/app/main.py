@@ -6,7 +6,7 @@ import os
 
 from app.core.config import settings
 from app.core.scheduler import start_scheduler, shutdown_scheduler
-from app.api import jobs, applications, cv, emails, agents, stats, notifications, chat, export, companies, log, interview
+from app.api import jobs, applications, cv, emails, agents, stats, notifications, chat, export, companies, log, interview, features, contacts
 from app.api import settings as settings_api
 
 @asynccontextmanager
@@ -43,6 +43,8 @@ app.include_router(export.router,         prefix="/api/export",         tags=["E
 app.include_router(companies.router,      prefix="/api/companies",      tags=["Companies"])
 app.include_router(log.router,            prefix="/api/log",            tags=["Log"])
 app.include_router(interview.router,      prefix="/api/interview-prep", tags=["Interview"])
+app.include_router(features.router,      prefix="/api/features",       tags=["Features"])
+app.include_router(contacts.router,      prefix="/api/contacts",       tags=["Contacts"])
 
 @app.get("/api/health")
 async def health():

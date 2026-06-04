@@ -40,3 +40,22 @@ async def resend_application(app_id: str):
 async def update_application(app_id: str, body: dict):
     get_client().table("applications").update(body).eq("id", app_id).execute()
     return {"success": True}
+
+@router.patch("/{app_id}/stage")
+async def update_stage(app_id: str, body: dict):
+    stage = body.get("stage")
+    allowed = ["sent", "viewed", "reply", "interview", "offer", "rejected"]
+    if stage not in allowed:
+        raise HTTPException(400, f"المرحلة يجب أن تكون إحدى: {allowed}")
+    get_client().table("applications").update({"stage": stage}).eq("id", app_id).execute()
+    return {"success": True, "stage": stage}
+
+@router.patch("/{app_id}/rejection-reason")
+async def set_rejection_reason(app_id: str, body: dict):
+    get_client().table("applications").update({"rejection_reason": body.get("reason", "")}).eq("id", app_id).execute()
+    return {"success": True}
+
+@router.patch("/{app_id}/interview-date")
+async def set_interview_date(app_id: str, body: dict):
+    get_client().table("applications").update({"interview_date": body.get("interview_date")}).eq("id", app_id).execute()
+    return {"success": True}

@@ -12,6 +12,8 @@ import Emails       from '@/pages/Emails'
 import Stats        from '@/pages/Stats'
 import Settings     from '@/pages/Settings'
 import EventLog     from '@/pages/EventLog'
+import Reports      from '@/pages/Reports'
+import Contacts     from '@/pages/Contacts'
 
 const qc = new QueryClient({
   defaultOptions: {
@@ -41,6 +43,8 @@ export default function App() {
             <Route path="stats"          element={<Stats />} />
             <Route path="settings"       element={<Settings />} />
             <Route path="log"            element={<EventLog />} />
+            <Route path="reports"        element={<Reports />} />
+            <Route path="contacts"       element={<Contacts />} />
           </Route>
         </Routes>
       </BrowserRouter>

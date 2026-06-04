@@ -1,17 +1,17 @@
 import { useState, useCallback, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { cvApi } from '@/lib/api'
-import { CVFile } from '@/types'
+import { cvApi, jobsApi, featuresApi } from '@/lib/api'
+import { CVFile, Job, CVHints } from '@/types'
 import { cn, formatDate } from '@/lib/utils'
 import {
   Upload, FileText, Star, Trash2, Download, Send,
   CheckCircle2, ChevronDown, ChevronUp, Bot, User,
-  RefreshCw, TrendingUp, AlertCircle, Lightbulb,
+  RefreshCw, TrendingUp, AlertCircle, Lightbulb, Wand2,
 } from 'lucide-react'
 
 export default function CV() {
   const qc = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'files' | 'analysis' | 'chat' | 'skills'>('files')
+  const [activeTab, setActiveTab] = useState<'files' | 'analysis' | 'chat' | 'skills' | 'hints'>('files')
   const [chatInput, setChatInput] = useState('')
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([])
   const [chatLoading, setChatLoading] = useState(false)
@@ -79,11 +79,29 @@ export default function CV() {
     }
   }
 
+  const [hintsJobId, setHintsJobId] = useState('')
+  const [hintsResult, setHintsResult] = useState<CVHints | null>(null)
+
+  const { data: allJobs = [] } = useQuery<Job[]>({
+    queryKey: ['jobs', { status: 'pending' }],
+    queryFn: () => jobsApi.list({ status: 'pending' }) as Promise<Job[]>,
+    enabled: activeTab === 'hints',
+  })
+
+  const hintsMut = useMutation({
+    mutationFn: () => featuresApi.cvHints({
+      job_id: hintsJobId,
+      cv_text: primary?.analysis ? JSON.stringify(primary.analysis) : '',
+    }) as Promise<CVHints>,
+    onSuccess: (data) => setHintsResult(data),
+  })
+
   const TABS = [
     { id: 'files',    label: 'الملفات' },
     { id: 'analysis', label: 'التحليل' },
     { id: 'chat',     label: 'شات AI' },
     { id: 'skills',   label: 'فجوة المهارات' },
+    { id: 'hints',    label: 'تلميحات AI' },
   ]
 
   return (
@@ -276,6 +294,67 @@ export default function CV() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Hints tab */}
+      {activeTab === 'hints' && (
+        <div className="space-y-4">
+          <div className="card p-5 space-y-4">
+            <h3 className="font-semibold flex items-center gap-2"><Wand2 size={18} className="text-primary-500" />تلميحات تخصيص الـ CV للوظيفة</h3>
+            <div className="flex gap-3">
+              <select
+                className="input flex-1 text-sm"
+                value={hintsJobId}
+                onChange={e => { setHintsJobId(e.target.value); setHintsResult(null) }}
+              >
+                <option value="">اختاري وظيفة...</option>
+                {allJobs.map(j => (
+                  <option key={j.id} value={j.id}>{j.title} — {j.company}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => hintsMut.mutate()}
+                disabled={!hintsJobId || hintsMut.isPending}
+                className="btn-primary px-4"
+              >
+                {hintsMut.isPending ? <RefreshCw size={14} className="animate-spin" /> : <Wand2 size={14} />}
+                تحليل
+              </button>
+            </div>
+
+            {hintsResult && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center">
+                    <p className="text-xs text-gray-500 mb-1">التطابق الحالي</p>
+                    <p className="text-2xl font-bold text-amber-500">{hintsResult.score_before}%</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 text-center">
+                    <p className="text-xs text-gray-500 mb-1">بعد التطبيق</p>
+                    <p className="text-2xl font-bold text-green-500">{hintsResult.score_after}%</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {hintsResult.hints.map((hint, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
+                      <div className="w-5 h-5 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs shrink-0 mt-0.5">
+                        {i + 1}
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{hint}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!hintsResult && !hintsMut.isPending && (
+              <div className="text-center py-8 text-gray-500">
+                <Wand2 size={32} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                <p className="text-sm">اختاري وظيفة لتحصلي على تلميحات تخصيص الـ CV</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

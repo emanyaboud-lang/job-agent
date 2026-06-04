@@ -13,10 +13,12 @@ const mainNav = [
 ]
 
 const moreNav = [
-  { to: '/cv',           label: 'السيرة الذاتية' },
-  { to: '/letter',       label: 'رسالة التقديم' },
-  { to: '/stats',        label: 'الإحصائيات' },
-  { to: '/log',          label: 'سجل الأحداث' },
+  { to: '/cv',            label: 'السيرة الذاتية' },
+  { to: '/letter',        label: 'رسالة التقديم' },
+  { to: '/reports',       label: 'التقارير' },
+  { to: '/contacts',      label: 'جهات الاتصال' },
+  { to: '/stats',         label: 'الإحصائيات' },
+  { to: '/log',           label: 'سجل الأحداث' },
   { to: '/jobs/rejected', label: 'الوظائف المرفوضة' },
 ]
 

@@ -28,14 +28,22 @@ export const jobsApi = {
   addManual:   (data: unknown)                   => post('/jobs/manual', data),
   matchScore:  (id: string)                      => get(`/jobs/${id}/match-score`),
   companyCard: (id: string)                      => get(`/jobs/${id}/company-card`),
+  setPriority: (id: string, is_priority: boolean) => patch(`/jobs/${id}/priority`, { is_priority }),
+  setNotes:    (id: string, notes: string)       => patch(`/jobs/${id}/notes`, { notes }),
+  toggleStar:  (id: string)                      => post(`/jobs/${id}/star`, {}),
+  compare:     (id1: string, id2: string)        => post('/jobs/compare', { job_id_1: id1, job_id_2: id2 }),
 }
 
 // --- Applications ---
 export const applicationsApi = {
-  list:       (params?: Record<string, string>) => get(`/applications${params ? '?' + new URLSearchParams(params) : ''}`),
-  get:        (id: string)                      => get(`/applications/${id}`),
-  resend:     (id: string)                      => post(`/applications/${id}/resend`, {}),
-  updateStatus:(id: string, status: string)     => patch(`/applications/${id}`, { status }),
+  list:          (params?: Record<string, string>) => get(`/applications${params ? '?' + new URLSearchParams(params) : ''}`),
+  get:           (id: string)                      => get(`/applications/${id}`),
+  resend:        (id: string)                      => post(`/applications/${id}/resend`, {}),
+  updateStatus:  (id: string, status: string)      => patch(`/applications/${id}`, { status }),
+  updateStage:   (id: string, stage: string)       => patch(`/applications/${id}/stage`, { stage }),
+  setRejection:  (id: string, reason: string)      => patch(`/applications/${id}/rejection-reason`, { reason }),
+  setNotes:      (id: string, notes: string)       => patch(`/applications/${id}`, { notes }),
+  setInterviewDate: (id: string, interview_date: string) => patch(`/applications/${id}/interview-date`, { interview_date }),
 }
 
 // --- CV ---
@@ -117,4 +125,22 @@ export const interviewApi = {
   get:      (applicationId: string) => get(`/interview-prep/${applicationId}`),
 }
 
-export default { jobsApi, applicationsApi, cvApi, emailsApi, agentsApi, settingsApi, statsApi, notificationsApi, chatApi, companiesApi, exportApi, logApi, interviewApi }
+// --- Features (AI) ---
+export const featuresApi = {
+  salaryEstimate:   (body: unknown) => post('/features/salary-estimate', body),
+  companyResearch:  (body: unknown) => post('/features/company-research', body),
+  cvHints:          (body: unknown) => post('/features/cv-hints', body),
+  interviewSimulate:(body: unknown) => post('/features/interview-simulate', body),
+  interviewQuestions:(jobId: string) => get(`/features/interview-questions/${jobId}`),
+  weeklyReport:     ()              => get('/features/weekly-report'),
+}
+
+// --- Contacts ---
+export const contactsApi = {
+  list:   ()                          => get('/contacts'),
+  create: (data: unknown)             => post('/contacts', data),
+  update: (id: string, data: unknown) => put(`/contacts/${id}`, data),
+  delete: (id: string)                => del(`/contacts/${id}`),
+}
+
+export default { jobsApi, applicationsApi, cvApi, emailsApi, agentsApi, settingsApi, statsApi, notificationsApi, chatApi, companiesApi, exportApi, logApi, interviewApi, featuresApi, contactsApi }

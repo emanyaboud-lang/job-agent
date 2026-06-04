@@ -81,3 +81,32 @@ async def get_company_card(job_id: str):
         [], ""
     )
     return {"company": job["company"], "info": info}
+
+@router.patch("/{job_id}/priority")
+async def set_job_priority(job_id: str, body: dict):
+    get_client().table("jobs").update({"is_priority": body.get("is_priority", False)}).eq("id", job_id).execute()
+    return {"success": True}
+
+@router.patch("/{job_id}/notes")
+async def set_job_notes(job_id: str, body: dict):
+    get_client().table("jobs").update({"notes": body.get("notes", "")}).eq("id", job_id).execute()
+    return {"success": True}
+
+@router.post("/{job_id}/star")
+async def star_job(job_id: str):
+    r = get_client().table("jobs").select("is_starred").eq("id", job_id).single().execute()
+    current = (r.data or {}).get("is_starred", False)
+    get_client().table("jobs").update({"is_starred": not current}).eq("id", job_id).execute()
+    return {"is_starred": not current}
+
+@router.post("/compare")
+async def compare_jobs(body: dict):
+    id1 = body.get("job_id_1")
+    id2 = body.get("job_id_2")
+    if not id1 or not id2:
+        raise HTTPException(400, "يجب تحديد وظيفتين")
+    r1 = get_client().table("jobs").select("*").eq("id", id1).single().execute()
+    r2 = get_client().table("jobs").select("*").eq("id", id2).single().execute()
+    if not r1.data or not r2.data:
+        raise HTTPException(404, "إحدى الوظيفتين غير موجودة")
+    return {"job1": r1.data, "job2": r2.data}

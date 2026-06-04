@@ -1,5 +1,6 @@
 export type JobStatus = 'pending' | 'approved' | 'rejected' | 'applied'
 export type ApplicationStatus = 'sent' | 'reviewing' | 'rejected' | 'interview' | 'offer'
+export type ApplicationStage = 'sent' | 'viewed' | 'reply' | 'interview' | 'offer' | 'rejected'
 export type EmailDirection = 'outgoing' | 'incoming'
 export type EmailStatus = 'sent' | 'delivered' | 'opened' | 'failed'
 export type AgentState = 'running' | 'idle' | 'stopped' | 'error'
@@ -27,6 +28,8 @@ export interface Job {
   is_vision2030?: boolean
   application_id?: string
   notes?: string
+  is_priority?: boolean
+  is_starred?: boolean
 }
 
 export interface Application {
@@ -35,6 +38,7 @@ export interface Application {
   job: Job
   company_id: string
   status: ApplicationStatus
+  stage?: ApplicationStage
   letter_text: string
   letter_language: LetterLanguage
   sent_at?: string
@@ -43,6 +47,9 @@ export interface Application {
   follow_up_count: number
   next_followup_at?: string
   cv_version_id?: string
+  notes?: string
+  rejection_reason?: string
+  interview_date?: string
 }
 
 export interface Email {
@@ -213,4 +220,61 @@ export interface ABTest {
   responses_a: number
   responses_b: number
   started_at: string
+}
+
+export interface Contact {
+  id: string
+  name: string
+  company: string
+  email?: string
+  phone?: string
+  notes?: string
+  last_contact?: string
+  met_at?: string
+  created_at: string
+}
+
+export interface SalaryEstimate {
+  min: number
+  max: number
+  currency: string
+  reasoning: string
+}
+
+export interface CompanyResearch {
+  overview: string
+  culture: string
+  news: string
+  tips: string
+}
+
+export interface CVHints {
+  hints: string[]
+  score_before: number
+  score_after: number
+}
+
+export interface InterviewSimResult {
+  feedback: string
+  score: number
+  better_answer: string
+}
+
+export interface WeeklyReport {
+  period: string
+  jobs_found: number
+  applications_sent: number
+  responses: number
+  interviews: number
+  offers: number
+  rejected: number
+  response_rate: number
+  avg_match_score: number
+  daily: { date: string; sent: number; found: number }[]
+}
+
+export interface DailyGoal {
+  target: number
+  current: number
+  date: string
 }
