@@ -110,8 +110,9 @@ export const companiesApi = {
 
 // --- Export ---
 export const exportApi = {
-  excel: () => fetch(`${BASE}/export/excel`).then(r => r.blob()),
-  csv:   () => fetch(`${BASE}/export/csv`).then(r => r.blob()),
+  excel:  () => fetch(`${BASE}/export/excel`).then(r => r.blob()),
+  csv:    () => fetch(`${BASE}/export/csv`).then(r => r.blob()),
+  backup: () => fetch(`${BASE}/export/backup`).then(r => r.blob()),
 }
 
 // --- Event Log ---
@@ -127,12 +128,23 @@ export const interviewApi = {
 
 // --- Features (AI) ---
 export const featuresApi = {
-  salaryEstimate:   (body: unknown) => post('/features/salary-estimate', body),
-  companyResearch:  (body: unknown) => post('/features/company-research', body),
-  cvHints:          (body: unknown) => post('/features/cv-hints', body),
-  interviewSimulate:(body: unknown) => post('/features/interview-simulate', body),
-  interviewQuestions:(jobId: string) => get(`/features/interview-questions/${jobId}`),
-  weeklyReport:     ()              => get('/features/weekly-report'),
+  salaryEstimate:      (body: unknown) => post('/features/salary-estimate', body),
+  companyResearch:     (body: unknown) => post('/features/company-research', body),
+  cvHints:             (body: unknown) => post('/features/cv-hints', body),
+  interviewSimulate:   (body: unknown) => post('/features/interview-simulate', body),
+  interviewQuestions:  (jobId: string) => get(`/features/interview-questions/${jobId}`),
+  weeklyReport:        ()              => get('/features/weekly-report'),
+  jobSummary:          (body: unknown) => post('/features/job-summary', body),
+  fakeJobCheck:        (body: unknown) => post('/features/fake-job-check', body),
+  cvImprove:           (body: unknown) => post('/features/cv-improve', body),
+  careerPaths:         ()              => get('/features/career-paths'),
+  translate:           (body: unknown) => post('/features/translate', body),
+  thankYouEmail:       (body: unknown) => post('/features/thank-you-email', body),
+  linkedinTemplates:   ()              => get('/features/linkedin-templates'),
+  successByType:       ()              => get('/features/success-by-type'),
+  monthlyComparison:   ()              => get('/features/monthly-comparison'),
+  bestTime:            ()              => get('/features/best-time'),
+  reminders:           ()              => get('/features/reminders'),
 }
 
 // --- Contacts ---

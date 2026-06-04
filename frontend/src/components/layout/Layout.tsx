@@ -3,6 +3,7 @@ import Header from './Header'
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 import FloatingChat from '@/components/chat/FloatingChat'
+import KeyboardShortcuts from './KeyboardShortcuts'
 
 export default function Layout() {
   const location = useLocation()
@@ -26,6 +27,7 @@ export default function Layout() {
       <BottomNav />
 
       <FloatingChat />
+      <KeyboardShortcuts />
     </div>
   )
 }

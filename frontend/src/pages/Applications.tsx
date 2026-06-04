@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { applicationsApi } from '@/lib/api'
+import { applicationsApi, featuresApi } from '@/lib/api'
 import { Application, ApplicationStage } from '@/types'
 import { cn, statusColors, statusLabels, cityLabels, formatDateTime, platformLabels, platformColors } from '@/lib/utils'
-import { RefreshCw, Mail, Eye, EyeOff, ChevronDown, ChevronUp, Building2, MapPin, LayoutGrid, List, X, StickyNote, Calendar } from 'lucide-react'
+import { RefreshCw, Mail, Eye, EyeOff, ChevronDown, ChevronUp, Building2, MapPin, LayoutGrid, List, X, StickyNote, Calendar, Heart, Minimize2, Maximize2 } from 'lucide-react'
 
 const STAGES: { key: ApplicationStage; label: string; color: string; bg: string }[] = [
   { key: 'sent',      label: 'مرسلة',       color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/20' },
@@ -23,6 +23,8 @@ export default function Applications() {
   const [notesModal, setNotesModal] = useState<{ id: string; text: string } | null>(null)
   const [rejectionModal, setRejectionModal] = useState<{ id: string; text: string } | null>(null)
   const [interviewModal, setInterviewModal] = useState<{ id: string; date: string } | null>(null)
+  const [thankYouModal, setThankYouModal] = useState<{ app: Application; subject?: string; body?: string; loading?: boolean } | null>(null)
+  const [compact, setCompact] = useState(false)
 
   const params: Record<string, string> = {}
   if (filterStatus) params.status = filterStatus
@@ -62,6 +64,20 @@ export default function Applications() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['applications'] }); setInterviewModal(null) },
   })
 
+  async function fetchThankYouEmail(app: Application) {
+    setThankYouModal({ app, loading: true })
+    try {
+      const res = await featuresApi.thankYouEmail({
+        company: app.job?.company || '',
+        job_title: app.job?.title || '',
+        interviewer_name: 'Hiring Manager',
+      }) as { subject: string; body: string }
+      setThankYouModal({ app, subject: res.subject, body: res.body, loading: false })
+    } catch {
+      setThankYouModal({ app, subject: 'Thank You', body: 'حدث خطأ في التوليد', loading: false })
+    }
+  }
+
   const STATUS_OPTS = [
     { value: '', label: 'الكل' },
     { value: 'sent', label: 'مرسلة' },
@@ -83,6 +99,13 @@ export default function Applications() {
               {o.label}
             </button>
           ))}
+          <button
+            onClick={() => setCompact(v => !v)}
+            className={cn('p-2 rounded-xl border border-gray-200 dark:border-gray-700 transition-colors', compact ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-500')}
+            title={compact ? 'عرض موسّع' : 'عرض مضغوط'}
+          >
+            {compact ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
+          </button>
           <div className="flex border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
             <button onClick={() => setView('list')} className={cn('p-2 transition-colors', view === 'list' ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'hover:bg-gray-50 dark:hover:bg-gray-800')}>
               <List size={16} />
@@ -117,7 +140,7 @@ export default function Applications() {
           {apps.map(app => (
             <div key={app.id} className="card overflow-hidden">
               {/* Main row */}
-              <div className="flex items-start gap-4 p-4">
+              <div className={cn('flex items-start gap-4', compact ? 'p-2' : 'p-4')}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center flex-wrap gap-2 mb-1">
                     <Link to={`/company/${app.company_id}`} className="font-semibold hover:text-primary-500 transition-colors">
@@ -188,6 +211,11 @@ export default function Applications() {
                   <button onClick={() => resend.mutate(app.id)} disabled={resend.isPending} className="btn-secondary text-xs px-2 py-1" title="إعادة الإرسال">
                     <RefreshCw size={13} />
                   </button>
+                  {(app.stage === 'interview' || app.status === 'interview') && (
+                    <button onClick={() => fetchThankYouEmail(app)} className="btn-secondary text-xs px-2 py-1 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20" title="إيميل شكر">
+                      <Heart size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -288,6 +316,37 @@ export default function Applications() {
               <button onClick={() => setInterviewModal(null)} className="btn-secondary text-xs">تخطي</button>
               <button onClick={() => saveInterview.mutate({ id: interviewModal.id, interview_date: interviewModal.date })} disabled={!interviewModal.date} className="btn-primary text-xs">حفظ</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Thank You Email Modal */}
+      {thankYouModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setThankYouModal(null)}>
+          <div className="card p-5 w-full max-w-lg animate-slide-up space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold flex items-center gap-2"><Heart size={16} className="text-pink-500" />إيميل الشكر</h3>
+              <button onClick={() => setThankYouModal(null)} className="btn-ghost p-1"><X size={14} /></button>
+            </div>
+            <p className="text-xs text-gray-500">{thankYouModal.app.job?.title} — {thankYouModal.app.job?.company}</p>
+            {thankYouModal.loading ? (
+              <div className="py-8 text-center text-gray-400 text-sm animate-pulse">جارٍ توليد الإيميل...</div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">الموضوع:</p>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2 text-sm font-medium">{thankYouModal.subject}</div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">نص الرسالة:</p>
+                  <pre className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed max-h-64 overflow-y-auto">{thankYouModal.body}</pre>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => { navigator.clipboard?.writeText(`Subject: ${thankYouModal.subject}\n\n${thankYouModal.body}`) }} className="btn-secondary text-xs">نسخ</button>
+                  <button onClick={() => setThankYouModal(null)} className="btn-primary text-xs">تم</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

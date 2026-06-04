@@ -6,12 +6,12 @@ import { cn, formatDate } from '@/lib/utils'
 import {
   Upload, FileText, Star, Trash2, Download, Send,
   CheckCircle2, ChevronDown, ChevronUp, Bot, User,
-  RefreshCw, TrendingUp, AlertCircle, Lightbulb, Wand2,
+  RefreshCw, TrendingUp, AlertCircle, Lightbulb, Wand2, Sparkles, GitCompare,
 } from 'lucide-react'
 
 export default function CV() {
   const qc = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'files' | 'analysis' | 'chat' | 'skills' | 'hints'>('files')
+  const [activeTab, setActiveTab] = useState<'files' | 'analysis' | 'chat' | 'skills' | 'hints' | 'improve' | 'compare'>('files')
   const [chatInput, setChatInput] = useState('')
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([])
   const [chatLoading, setChatLoading] = useState(false)
@@ -96,12 +96,29 @@ export default function CV() {
     onSuccess: (data) => setHintsResult(data),
   })
 
+  const [improveResult, setImproveResult] = useState<{ improved_sections: { section: string; original: string; improved: string; reason: string }[] } | null>(null)
+  const [improvingCV, setImprovingCV] = useState(false)
+
+  async function runCVImprove() {
+    if (!primary) return
+    setImprovingCV(true)
+    setImproveResult(null)
+    try {
+      const cvText = primary.analysis ? JSON.stringify(primary.analysis) : primary.file_name
+      const res = await featuresApi.cvImprove({ cv_text: cvText }) as { improved_sections: { section: string; original: string; improved: string; reason: string }[] }
+      setImproveResult(res)
+    } catch {}
+    setImprovingCV(false)
+  }
+
   const TABS = [
     { id: 'files',    label: 'الملفات' },
     { id: 'analysis', label: 'التحليل' },
     { id: 'chat',     label: 'شات AI' },
     { id: 'skills',   label: 'فجوة المهارات' },
     { id: 'hints',    label: 'تلميحات AI' },
+    { id: 'improve',  label: 'تحسين AI' },
+    { id: 'compare',  label: 'مقارنة النسخ' },
   ]
 
   return (
@@ -355,6 +372,96 @@ export default function CV() {
               </div>
             )}
           </div>
+        </div>
+      )}
+      {/* CV Improve tab */}
+      {activeTab === 'improve' && (
+        <div className="space-y-4">
+          <div className="card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold flex items-center gap-2"><Sparkles size={18} className="text-violet-500" />تحسين السيرة الذاتية بالذكاء الاصطناعي</h3>
+              <button onClick={runCVImprove} disabled={improvingCV || !primary} className="btn-primary text-sm px-4">
+                {improvingCV ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                {improvingCV ? 'جارٍ التحليل...' : 'تحسين الآن'}
+              </button>
+            </div>
+            {!primary && <p className="text-sm text-gray-400 text-center py-4">ارفعي السيرة الذاتية أولاً</p>}
+            {improveResult && (
+              <div className="space-y-4 animate-fade-in">
+                {improveResult.improved_sections.map((s, i) => (
+                  <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+                    <div className="px-4 py-2 bg-violet-50 dark:bg-violet-900/20 flex items-center gap-2">
+                      <Sparkles size={13} className="text-violet-500" />
+                      <span className="text-sm font-semibold text-violet-700 dark:text-violet-300">{s.section}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-gray-800">
+                      <div className="p-4">
+                        <p className="text-xs font-medium text-gray-400 mb-2">الأصلي</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{s.original}</p>
+                      </div>
+                      <div className="p-4 bg-green-50/50 dark:bg-green-900/10">
+                        <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-2">المُحسَّن</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">{s.improved}</p>
+                        {s.reason && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-start gap-1">
+                            <Lightbulb size={11} className="mt-0.5 shrink-0" />{s.reason}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!improveResult && !improvingCV && primary && (
+              <div className="text-center py-8 text-gray-400">
+                <Sparkles size={32} className="mx-auto mb-3 text-gray-300" />
+                <p className="text-sm">اضغطي "تحسين الآن" للحصول على اقتراحات تحسين مفصّلة</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Compare tab */}
+      {activeTab === 'compare' && (
+        <div className="card p-5 space-y-4">
+          <h3 className="font-semibold flex items-center gap-2"><GitCompare size={18} className="text-primary-500" />مقارنة نسخ السيرة الذاتية</h3>
+          {cvFiles.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">لا توجد نسخ مرفوعة بعد</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    {['النسخة', 'تاريخ الرفع', 'الحالة', 'المهارات', 'الشهادات', 'الملاحظات'].map(h => (
+                      <th key={h} className="text-right px-4 py-2.5 text-xs font-medium text-gray-600 dark:text-gray-400">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                  {cvFiles.map(cv => (
+                    <tr key={cv.id} className={cn('hover:bg-gray-50 dark:hover:bg-gray-800/50', cv.is_primary && 'bg-primary-50/30 dark:bg-primary-900/10')}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <FileText size={14} className={cv.is_primary ? 'text-primary-500' : 'text-gray-400'} />
+                          <span className="font-medium">{cv.version_name || cv.file_name}</span>
+                          {cv.is_primary && <span className="badge-sky text-xs">أساسي</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(cv.uploaded_at)}</td>
+                      <td className="px-4 py-3">
+                        {cv.analysis ? <span className="badge-green">محلَّل</span> : <span className="badge-gray">بدون تحليل</span>}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{cv.analysis?.skills?.slice(0, 3).join(', ') || '—'}</td>
+                      <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{cv.analysis?.certifications?.join(', ') || '—'}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500">{cv.analysis?.improvements?.length ? `${cv.analysis.improvements.length} اقتراح` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>

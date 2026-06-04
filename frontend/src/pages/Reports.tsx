@@ -4,14 +4,28 @@ import { WeeklyReport } from '@/types'
 import { cn } from '@/lib/utils'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  LineChart, Line, ResponsiveContainer, Legend,
+  LineChart, Line, ResponsiveContainer, Legend, RadialBarChart, RadialBar,
 } from 'recharts'
-import { TrendingUp, Send, Eye, Calendar, Award, Download, RefreshCw } from 'lucide-react'
+import { TrendingUp, Send, Eye, Calendar, Award, Download, RefreshCw, TrendingDown } from 'lucide-react'
 
 export default function Reports() {
   const { data: report, isLoading, refetch, isFetching } = useQuery<WeeklyReport>({
     queryKey: ['weekly-report'],
     queryFn: () => featuresApi.weeklyReport() as Promise<WeeklyReport>,
+  })
+
+  const { data: successByType } = useQuery<{ data: { type: string; applied: number; responses: number; rate: number }[] }>({
+    queryKey: ['success-by-type'],
+    queryFn: () => featuresApi.successByType() as Promise<{ data: { type: string; applied: number; responses: number; rate: number }[] }>,
+  })
+
+  const { data: monthlyComp } = useQuery<{
+    current: { applied: number; responses: number; interviews: number }
+    previous: { applied: number; responses: number; interviews: number }
+    changes: { applied: number; responses: number; interviews: number }
+  }>({
+    queryKey: ['monthly-comparison'],
+    queryFn: () => featuresApi.monthlyComparison() as Promise<{ current: { applied: number; responses: number; interviews: number }; previous: { applied: number; responses: number; interviews: number }; changes: { applied: number; responses: number; interviews: number } }>,
   })
 
   const handleExportExcel = async () => {
@@ -144,6 +158,53 @@ export default function Reports() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+          )}
+
+          {/* Monthly Comparison */}
+          {monthlyComp && (
+            <div className="card p-5">
+              <h3 className="font-semibold text-sm mb-4">مقارنة شهر بشهر</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {([
+                  { label: 'التقديمات', key: 'applied', icon: Send },
+                  { label: 'الردود', key: 'responses', icon: Eye },
+                  { label: 'المقابلات', key: 'interviews', icon: Calendar },
+                ] as const).map(item => {
+                  const change = monthlyComp.changes[item.key]
+                  const isPositive = change > 0
+                  const Icon = item.icon
+                  return (
+                    <div key={item.key} className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl">
+                      <Icon size={16} className="mx-auto text-gray-400 mb-2" />
+                      <p className="text-xs text-gray-500 mb-1">{item.label}</p>
+                      <p className="text-2xl font-bold">{monthlyComp.current[item.key]}</p>
+                      <div className={cn('text-xs flex items-center justify-center gap-1 mt-1', isPositive ? 'text-green-600' : change < 0 ? 'text-red-500' : 'text-gray-400')}>
+                        {change > 0 ? <TrendingUp size={11} /> : change < 0 ? <TrendingDown size={11} /> : null}
+                        {change > 0 ? `+${change}` : change === 0 ? '—' : change} مقارنة بالشهر الماضي
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Success by Job Type */}
+          {successByType && successByType.data.length > 0 && (
+            <div className="card p-5">
+              <h3 className="font-semibold text-sm mb-4">معدل الاستجابة حسب نوع الوظيفة</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={successByType.data}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="type" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="applied" fill="#0ea5e9" name="مُقدَّم" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="responses" fill="#10b981" name="ردود" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
 

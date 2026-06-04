@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { settingsApi, agentsApi } from '@/lib/api'
+import { settingsApi, agentsApi, featuresApi, exportApi } from '@/lib/api'
 import { Settings as SettingsType, City, Platform, PrimaryColor } from '@/types'
 import { useStore } from '@/store/useStore'
 import { applyPrimaryColor } from '@/lib/utils'
-import { Save, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Wifi, Database, Mail, Bot, Clock, Globe, Zap, Key } from 'lucide-react'
+import { Save, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Wifi, Database, Mail, Bot, Clock, Globe, Zap, Key, Download, Bell, Copy } from 'lucide-react'
 
 type FullCheckService = { ok: boolean; detail: string }
 type FullCheckResult = { ok: boolean; services: Record<string, FullCheckService> }
@@ -86,7 +86,7 @@ export default function Settings() {
   const { setTheme, setPrimaryColor, theme } = useStore()
   const [settings, setSettings] = useState<SettingsType>(DEFAULT_SETTINGS)
   const [saved, setSaved] = useState(false)
-  const [activeTab, setActiveTab] = useState<'server' | 'general' | 'preferences' | 'limits' | 'signature' | 'followup' | 'notifications'>('server')
+  const [activeTab, setActiveTab] = useState<'server' | 'general' | 'preferences' | 'limits' | 'signature' | 'followup' | 'notifications' | 'linkedin' | 'backup'>('server')
   const [newKeyword, setNewKeyword] = useState('')
   const [newBlacklist, setNewBlacklist] = useState('')
   const [fullCheck, setFullCheck] = useState<FullCheckResult | null>(null)
@@ -94,6 +94,50 @@ export default function Settings() {
 
   const [testEmail, setTestEmail] = useState<{ ok: boolean; detail: string } | null>(null)
   const [testingEmail, setTestingEmail] = useState(false)
+  const [browserNotifStatus, setBrowserNotifStatus] = useState<'default' | 'granted' | 'denied'>(() => {
+    if (typeof Notification !== 'undefined') return Notification.permission
+    return 'default'
+  })
+  const [dailySummaryEnabled, setDailySummaryEnabled] = useState(() => localStorage.getItem('daily_summary_enabled') === 'true')
+  const [linkedinTemplates, setLinkedinTemplates] = useState<{ title: string; message: string; use_case: string }[]>([])
+  const [loadingLinkedin, setLoadingLinkedin] = useState(false)
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
+  const [backingUp, setBackingUp] = useState(false)
+
+  async function requestBrowserNotif() {
+    if (typeof Notification === 'undefined') return
+    const perm = await Notification.requestPermission()
+    setBrowserNotifStatus(perm)
+    if (perm === 'granted') {
+      new Notification('Job Agents', { body: 'تم تفعيل الإشعارات بنجاح!' })
+    }
+  }
+
+  function toggleDailySummary(v: boolean) {
+    setDailySummaryEnabled(v)
+    localStorage.setItem('daily_summary_enabled', String(v))
+  }
+
+  async function loadLinkedinTemplates() {
+    setLoadingLinkedin(true)
+    try {
+      const res = await featuresApi.linkedinTemplates() as { templates: { title: string; message: string; use_case: string }[] }
+      setLinkedinTemplates(res.templates)
+    } catch {}
+    setLoadingLinkedin(false)
+  }
+
+  async function handleBackup() {
+    setBackingUp(true)
+    try {
+      const blob = await exportApi.backup()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `job_agents_backup_${new Date().toISOString().slice(0,10)}.json`; a.click()
+      URL.revokeObjectURL(url)
+    } catch {}
+    setBackingUp(false)
+  }
 
   const runTestEmail = async () => {
     setTestingEmail(true)
@@ -183,6 +227,8 @@ export default function Settings() {
     { id: 'signature',     label: 'التوقيع',         icon: '✍️' },
     { id: 'followup',      label: 'المتابعة',        icon: '📨' },
     { id: 'notifications', label: 'الإشعارات',       icon: '🔔' },
+    { id: 'linkedin',      label: 'LinkedIn',        icon: '💼' },
+    { id: 'backup',        label: 'النسخ الاحتياطي', icon: '💾' },
   ]
 
   return (
@@ -668,29 +714,150 @@ export default function Settings() {
 
       {/* ===== تبويب الإشعارات ===== */}
       {activeTab === 'notifications' && (
+        <div className="space-y-4">
+          <div className="card p-5 space-y-4">
+            <h3 className="font-semibold">تفضيلات الإشعارات</h3>
+            <div className="space-y-3">
+              {([
+                { key: 'new_job',           label: 'وظيفة جديدة',          icon: '💼' },
+                { key: 'reply_received',    label: 'رد من شركة',            icon: '📩' },
+                { key: 'application_sent',  label: 'تم إرسال تقديم',        icon: '✅' },
+                { key: 'email_opened',      label: 'الشركة فتحت الإيميل',   icon: '👁️' },
+                { key: 'limit_reached',     label: 'الوصول للحد اليومي',    icon: '⚠️' },
+              ] as const).map(n => (
+                <div key={n.key} className="flex items-center gap-4 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                  <span className="text-lg">{n.icon}</span>
+                  <span className="text-sm flex-1">{n.label}</span>
+                  <select className="input text-sm py-1.5 w-36"
+                    value={settings.notification_prefs[n.key]}
+                    onChange={e => update(['notification_prefs', n.key], e.target.value)}>
+                    <option value="both">الموقع + إيميل</option>
+                    <option value="site">الموقع فقط</option>
+                    <option value="email">إيميل فقط</option>
+                    <option value="none">لا إشعارات</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Browser Notifications */}
+          <div className="card p-5 space-y-3">
+            <h3 className="font-semibold flex items-center gap-2"><Bell size={16} className="text-primary-500" />إشعارات المتصفح</h3>
+            <p className="text-xs text-gray-500">تفعيل إشعارات المتصفح لتصلك تنبيهات فورية عند اكتشاف وظائف جديدة.</p>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                browserNotifStatus === 'granted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                browserNotifStatus === 'denied' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+              }`}>
+                {browserNotifStatus === 'granted' ? '✅ مفعّلة' : browserNotifStatus === 'denied' ? '❌ مرفوضة' : '⚪ غير مفعّلة'}
+              </span>
+              {browserNotifStatus !== 'granted' && browserNotifStatus !== 'denied' && (
+                <button onClick={requestBrowserNotif} className="btn-primary text-xs px-4 py-2">
+                  <Bell size={13} />تفعيل إشعارات المتصفح
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Daily Summary Email */}
+          <div className="card p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2"><Mail size={16} className="text-blue-500" />ملخص يومي بالإيميل</h3>
+                <p className="text-xs text-gray-400 mt-0.5">إرسال ملخص يومي شامل إلى إيميلك الساعة 9 صباحاً</p>
+              </div>
+              <button onClick={() => toggleDailySummary(!dailySummaryEnabled)}
+                className={`w-11 h-6 rounded-full transition-all duration-200 relative ${dailySummaryEnabled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200 ${dailySummaryEnabled ? 'right-0.5' : 'left-0.5'}`} />
+              </button>
+            </div>
+            {dailySummaryEnabled && (
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-3 text-xs text-green-700 dark:text-green-300">
+                ✅ الملخص اليومي مفعّل — ستصلك رسالة كل يوم الساعة 9 صباحاً
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== تبويب LinkedIn ===== */}
+      {activeTab === 'linkedin' && (
         <div className="card p-5 space-y-4">
-          <h3 className="font-semibold">تفضيلات الإشعارات</h3>
-          <div className="space-y-3">
-            {([
-              { key: 'new_job',           label: 'وظيفة جديدة',          icon: '💼' },
-              { key: 'reply_received',    label: 'رد من شركة',            icon: '📩' },
-              { key: 'application_sent',  label: 'تم إرسال تقديم',        icon: '✅' },
-              { key: 'email_opened',      label: 'الشركة فتحت الإيميل',   icon: '👁️' },
-              { key: 'limit_reached',     label: 'الوصول للحد اليومي',    icon: '⚠️' },
-            ] as const).map(n => (
-              <div key={n.key} className="flex items-center gap-4 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0">
-                <span className="text-lg">{n.icon}</span>
-                <span className="text-sm flex-1">{n.label}</span>
-                <select className="input text-sm py-1.5 w-36"
-                  value={settings.notification_prefs[n.key]}
-                  onChange={e => update(['notification_prefs', n.key], e.target.value)}>
-                  <option value="both">الموقع + إيميل</option>
-                  <option value="site">الموقع فقط</option>
-                  <option value="email">إيميل فقط</option>
-                  <option value="none">لا إشعارات</option>
-                </select>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold flex items-center gap-2">💼 قوالب رسائل LinkedIn</h3>
+            <button onClick={loadLinkedinTemplates} disabled={loadingLinkedin} className="btn-primary text-xs px-4 py-2">
+              {loadingLinkedin ? <RefreshCw size={13} className="animate-spin" /> : <Globe size={13} />}
+              تحميل القوالب
+            </button>
+          </div>
+          {linkedinTemplates.length === 0 && !loadingLinkedin && (
+            <div className="text-center py-8 text-gray-400">
+              <p className="text-sm">اضغطي "تحميل القوالب" لعرض رسائل LinkedIn الجاهزة</p>
+            </div>
+          )}
+          {loadingLinkedin && <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />)}</div>}
+          <div className="space-y-4">
+            {linkedinTemplates.map((t, i) => (
+              <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-sm">{t.title}</p>
+                    <p className="text-xs text-gray-400">{t.use_case}</p>
+                  </div>
+                  <button
+                    onClick={() => { navigator.clipboard?.writeText(t.message); setCopiedIdx(i); setTimeout(() => setCopiedIdx(null), 2000) }}
+                    className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"
+                  >
+                    {copiedIdx === i ? '✓ تم النسخ' : <><Copy size={12} />نسخ</>}
+                  </button>
+                </div>
+                <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-sans bg-gray-50 dark:bg-gray-800 rounded-xl p-3 leading-relaxed">{t.message}</pre>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ===== تبويب النسخ الاحتياطي ===== */}
+      {activeTab === 'backup' && (
+        <div className="space-y-4">
+          <div className="card p-5 space-y-4">
+            <h3 className="font-semibold flex items-center gap-2"><Download size={16} className="text-green-500" />نسخة احتياطية شاملة</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              يصدّر جميع بياناتك (الوظائف، التقديمات، جهات الاتصال، السير الذاتية) كملف JSON يمكنك حفظه محلياً.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { icon: '💼', label: 'الوظائف', desc: 'جميع الوظائف المكتشفة' },
+                { icon: '📨', label: 'التقديمات', desc: 'سجل التقديمات الكامل' },
+                { icon: '👥', label: 'جهات الاتصال', desc: 'شبكة التواصل' },
+                { icon: '📄', label: 'السير الذاتية', desc: 'معلومات الملفات' },
+              ].map(item => (
+                <div key={item.label} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+                  <span className="text-2xl">{item.icon}</span>
+                  <p className="text-sm font-medium mt-1">{item.label}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+            <button onClick={handleBackup} disabled={backingUp} className="btn-primary flex items-center gap-2 px-6 py-2.5">
+              {backingUp ? <><RefreshCw size={14} className="animate-spin" />جارٍ التصدير...</> : <><Download size={14} />نسخ الآن</>}
+            </button>
+          </div>
+
+          <div className="card p-5 space-y-3">
+            <h3 className="font-semibold flex items-center gap-2">📤 تصدير Excel</h3>
+            <p className="text-xs text-gray-500">تصدير التقديمات بصيغة Excel للاستخدام في جداول البيانات</p>
+            <button onClick={async () => {
+              const { exportApi: ea } = await import('@/lib/api')
+              const blob = await ea.excel()
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url; a.download = 'job_agents.xlsx'; a.click()
+            }} className="btn-secondary text-xs px-4 py-2 flex items-center gap-2">
+              <Download size={13} />تصدير Excel
+            </button>
           </div>
         </div>
       )}

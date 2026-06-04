@@ -1,20 +1,28 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { jobsApi, agentsApi, statsApi } from '@/lib/api'
+import { jobsApi, agentsApi, statsApi, featuresApi } from '@/lib/api'
 import { Job, AgentStatus } from '@/types'
 import { cn, cityLabels, platformColors, platformLabels, matchScoreBg, formatDateTime, timeAgo } from '@/lib/utils'
 import { useStore } from '@/store/useStore'
 import {
-  Search, Play, Square, CheckCircle2, ChevronRight,
+  Search, Play, CheckCircle2, ChevronRight,
   Zap, ZapOff, MapPin, Calendar, Briefcase, TrendingUp,
   RefreshCw, CheckCheck, Clock, Pause, Target, Lightbulb,
-  BarChart2,
+  BarChart2, Bell, Plus, Trash2, Route, Trophy,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, ResponsiveContainer,
 } from 'recharts'
+
+// ── Todo List types ───────────────────────────────────────────
+interface TodoItem { id: string; text: string; done: boolean; created_at: string }
+
+function loadTodos(): TodoItem[] {
+  try { return JSON.parse(localStorage.getItem('job_todos') || '[]') } catch { return [] }
+}
+function saveTodos(todos: TodoItem[]) { localStorage.setItem('job_todos', JSON.stringify(todos)) }
 
 const CITY_COLORS: Record<string, string> = {
   madinah: '#0ea5e9',
@@ -40,6 +48,23 @@ export default function Dashboard() {
   const [editGoal, setEditGoal] = useState(false)
   const [goalInput, setGoalInput] = useState(String(dailyGoal))
   const [tipIdx] = useState(() => Math.floor(Math.random() * TIPS.length))
+  const [todos, setTodos] = useState<TodoItem[]>(loadTodos)
+  const [todoInput, setTodoInput] = useState('')
+
+  function addTodo() {
+    const text = todoInput.trim()
+    if (!text) return
+    const next = [...todos, { id: Date.now().toString(), text, done: false, created_at: new Date().toISOString() }]
+    setTodos(next); saveTodos(next); setTodoInput('')
+  }
+  function toggleTodo(id: string) {
+    const next = todos.map(t => t.id === id ? { ...t, done: !t.done } : t)
+    setTodos(next); saveTodos(next)
+  }
+  function deleteTodo(id: string) {
+    const next = todos.filter(t => t.id !== id)
+    setTodos(next); saveTodos(next)
+  }
 
   const { data: pendingJobs = [] } = useQuery<Job[]>({
     queryKey: ['jobs', 'pending'],
@@ -64,6 +89,24 @@ export default function Dashboard() {
     queryKey: ['stats', 'overview'],
     queryFn: () => statsApi.overview() as Promise<{ today: number; this_week: number; response_rate: number }>,
     refetchInterval: 60000,
+  })
+
+  const { data: bestTimeData } = useQuery<{ day: string; time: string; tip: string }>({
+    queryKey: ['best-time'],
+    queryFn: () => featuresApi.bestTime() as Promise<{ day: string; time: string; tip: string }>,
+    staleTime: 300_000,
+  })
+
+  const { data: remindersData } = useQuery<{ reminders: { type: string; message: string; link: string; urgency: string }[] }>({
+    queryKey: ['reminders'],
+    queryFn: () => featuresApi.reminders() as Promise<{ reminders: { type: string; message: string; link: string; urgency: string }[] }>,
+    refetchInterval: 120000,
+  })
+
+  const { data: careerPathsData } = useQuery<{ paths: { title: string; description: string; required_skills: string[]; match_percent: number; timeline: string }[] }>({
+    queryKey: ['career-paths'],
+    queryFn: () => featuresApi.careerPaths() as Promise<{ paths: { title: string; description: string; required_skills: string[]; match_percent: number; timeline: string }[] }>,
+    staleTime: 600_000,
   })
 
   const searchNow = useMutation({
@@ -107,6 +150,18 @@ export default function Dashboard() {
   }))
 
   const goalProgress = Math.min(100, Math.round((todaySent / dailyGoal) * 100))
+
+  // Achievements
+  const totalApps = (stats as unknown as Record<string, number> | undefined)?.total_applications ?? 0
+  const interviews = (stats as unknown as Record<string, number> | undefined)?.interviews ?? 0
+  const BADGES = [
+    { id: 'first', icon: '🎯', label: 'أول تقديم', unlocked: totalApps >= 1 },
+    { id: 'five', icon: '🔥', label: '5 تقديمات', unlocked: totalApps >= 5 },
+    { id: 'ten', icon: '⭐', label: 'محترف (10)', unlocked: totalApps >= 10 },
+    { id: 'twenty', icon: '🏅', label: 'متميز (20)', unlocked: totalApps >= 20 },
+    { id: 'interview', icon: '🏆', label: 'مقابلة', unlocked: interviews >= 1 },
+    { id: 'cv', icon: '💎', label: 'CV محلَّل', unlocked: true },
+  ]
 
   function saveGoal() {
     const n = Math.max(1, parseInt(goalInput) || 3)
@@ -384,6 +439,128 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Best Time + Reminders row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Best Time to Apply */}
+        <div className="card p-5">
+          <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+            <Clock size={16} className="text-sky-500" />أفضل وقت للتقديم
+          </h3>
+          {bestTimeData ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-sky-500">{bestTimeData.time}</span>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{bestTimeData.day}</p>
+              <p className="text-xs text-gray-500 leading-relaxed">{bestTimeData.tip}</p>
+            </div>
+          ) : (
+            <div className="animate-pulse space-y-2">
+              <div className="h-6 bg-gray-100 dark:bg-gray-800 rounded w-32" />
+              <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-48" />
+            </div>
+          )}
+        </div>
+
+        {/* Smart Reminders */}
+        <div className="card p-5">
+          <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+            <Bell size={16} className="text-amber-500" />تذكيرات ذكية
+          </h3>
+          <div className="space-y-2">
+            {(remindersData?.reminders ?? []).slice(0, 3).map((r, i) => (
+              <Link to={r.link} key={i} className={cn('flex items-start gap-2 p-2.5 rounded-xl text-xs transition-colors hover:opacity-80',
+                r.urgency === 'high' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' :
+                r.urgency === 'medium' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300' :
+                'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+              )}>
+                <span className="mt-0.5 shrink-0">{r.urgency === 'high' ? '🔴' : r.urgency === 'medium' ? '🟡' : 'ℹ️'}</span>
+                <p>{r.message}</p>
+              </Link>
+            ))}
+            {!remindersData && <div className="animate-pulse h-16 bg-gray-100 dark:bg-gray-800 rounded-xl" />}
+          </div>
+        </div>
+      </div>
+
+      {/* Achievement Badges */}
+      <div className="card p-5">
+        <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+          <Trophy size={16} className="text-amber-500" />الإنجازات
+        </h3>
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          {BADGES.map(badge => (
+            <div key={badge.id} className={cn('flex flex-col items-center gap-1.5 p-3 rounded-2xl text-center transition-all',
+              badge.unlocked ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-gray-50 dark:bg-gray-800 opacity-40'
+            )}>
+              <span className="text-2xl">{badge.icon}</span>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{badge.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Career Paths */}
+      {careerPathsData && (
+        <div className="card p-5">
+          <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+            <Route size={16} className="text-primary-500" />مساراتي المهنية المقترحة
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {careerPathsData.paths.slice(0, 4).map((path, i) => (
+              <div key={i} className="p-4 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-primary-200 dark:hover:border-primary-800 transition-colors">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="font-semibold text-sm">{path.title}</p>
+                  <span className={cn('badge shrink-0', path.match_percent >= 80 ? 'badge-green' : 'badge-amber')}>{path.match_percent}%</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{path.description}</p>
+                <div className="flex flex-wrap gap-1">
+                  {(path.required_skills ?? []).slice(0, 3).map(s => (
+                    <span key={s} className="badge-blue text-xs">{s}</span>
+                  ))}
+                  {path.timeline && <span className="badge-gray text-xs">{path.timeline}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Todo List */}
+      <div className="card p-5">
+        <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+          <CheckCheck size={16} className="text-green-500" />قائمة مهام البحث الوظيفي
+        </h3>
+        <div className="flex gap-2 mb-3">
+          <input
+            className="input text-sm flex-1 py-2"
+            placeholder="أضيفي مهمة جديدة..."
+            value={todoInput}
+            onChange={e => setTodoInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addTodo()}
+          />
+          <button onClick={addTodo} disabled={!todoInput.trim()} className="btn-primary px-3 py-2">
+            <Plus size={14} />
+          </button>
+        </div>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {todos.length === 0 && (
+            <p className="text-center text-xs text-gray-400 py-4">لا مهام — أضيفي مهمة للبدء!</p>
+          )}
+          {todos.map(t => (
+            <div key={t.id} className={cn('flex items-center gap-3 p-2.5 rounded-xl transition-colors', t.done ? 'bg-green-50 dark:bg-green-900/10' : 'bg-gray-50 dark:bg-gray-800')}>
+              <button onClick={() => toggleTodo(t.id)} className={cn('w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors', t.done ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-600')}>
+                {t.done && <CheckCircle2 size={12} className="text-white" />}
+              </button>
+              <p className={cn('text-sm flex-1', t.done && 'line-through text-gray-400')}>{t.text}</p>
+              <button onClick={() => deleteTodo(t.id)} className="text-gray-400 hover:text-red-500 p-1 rounded-lg transition-colors">
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
