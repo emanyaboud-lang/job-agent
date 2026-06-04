@@ -42,38 +42,64 @@ html.dark body {
 ::-webkit-scrollbar-thumb  { background: #cbd5e1; border-radius: 999px; }
 html.dark ::-webkit-scrollbar-thumb { background: #374151; }
 
+/* ===== Emil Kowalski easing curves ===== */
+:root {
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* ===== Utilities ===== */
 @layer components {
   .card {
     @apply bg-white dark:bg-gray-900 rounded-2xl shadow-card border border-gray-100 dark:border-gray-800;
   }
   .card-hover {
-    @apply card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer;
+    @apply card cursor-pointer;
+    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -4px rgb(0 0 0 / 0.12);
   }
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-medium rounded-xl
-           px-4 py-2 transition-all duration-150 inline-flex items-center gap-2
+    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-xl
+           px-4 py-2 inline-flex items-center gap-2
            disabled:opacity-50 disabled:cursor-not-allowed;
+    transition: transform 160ms var(--ease-out), background-color 150ms ease, opacity 150ms ease;
   }
+  .btn-primary:active:not(:disabled) { transform: scale(0.97); }
+
   .btn-secondary {
     @apply bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700
            text-gray-700 dark:text-gray-300 font-medium rounded-xl
-           px-4 py-2 transition-all duration-150 inline-flex items-center gap-2;
+           px-4 py-2 inline-flex items-center gap-2;
+    transition: transform 160ms var(--ease-out), background-color 150ms ease;
   }
+  .btn-secondary:active { transform: scale(0.97); }
+
   .btn-ghost {
     @apply hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400
-           rounded-xl px-3 py-1.5 transition-all duration-150 inline-flex items-center gap-2;
+           rounded-xl px-3 py-1.5 inline-flex items-center gap-2;
+    transition: transform 160ms var(--ease-out), background-color 150ms ease;
   }
+  .btn-ghost:active { transform: scale(0.97); }
+
   .btn-danger {
     @apply bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40
            text-red-600 dark:text-red-400 font-medium rounded-xl
-           px-4 py-2 transition-all duration-150 inline-flex items-center gap-2;
+           px-4 py-2 inline-flex items-center gap-2;
+    transition: transform 160ms var(--ease-out), background-color 150ms ease;
   }
+  .btn-danger:active { transform: scale(0.97); }
+
   .input {
     @apply w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700
            rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40
-           focus:border-primary-500 transition-all duration-150 placeholder:text-gray-400
+           focus:border-primary-500 placeholder:text-gray-400
            dark:placeholder:text-gray-500 dark:text-gray-100;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
   }
   .badge          { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium; }
   .badge-blue     { @apply badge bg-blue-100  dark:bg-blue-900/30  text-blue-700  dark:text-blue-300; }
@@ -85,8 +111,55 @@ html.dark ::-webkit-scrollbar-thumb { background: #374151; }
   .badge-purple   { @apply badge bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300; }
 }
 
-.page-enter { animation: fadeIn 0.2s ease-out; }
+/* ===== Page transitions (Emil: fast enter, instant exit) ===== */
+.page-enter {
+  animation: pageEnter 220ms var(--ease-out) both;
+}
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-@keyframes fadeIn    { from { opacity: 0; }               to { opacity: 1; } }
-@keyframes slideUp   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulseDot  { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+/* ===== Stagger for list items ===== */
+.stagger-item { opacity: 0; animation: staggerIn 250ms var(--ease-out) forwards; }
+.stagger-item:nth-child(1)  { animation-delay:  0ms; }
+.stagger-item:nth-child(2)  { animation-delay: 40ms; }
+.stagger-item:nth-child(3)  { animation-delay: 80ms; }
+.stagger-item:nth-child(4)  { animation-delay:120ms; }
+.stagger-item:nth-child(5)  { animation-delay:160ms; }
+.stagger-item:nth-child(6)  { animation-delay:200ms; }
+.stagger-item:nth-child(7)  { animation-delay:240ms; }
+.stagger-item:nth-child(n+8){ animation-delay:280ms; }
+@keyframes staggerIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Modal/drawer animation ===== */
+.animate-slide-down {
+  animation: slideDown 200ms var(--ease-out) both;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: scale(0.97) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ===== Pulse dot ===== */
+@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.animate-pulse-dot  { animation: pulseDot 2s ease-in-out infinite; }
+.animate-fade-in    { animation: fadeIn 200ms var(--ease-out); }
+
+/* ===== Reduced motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== Hover only on pointer devices ===== */
+@media (hover: none) {
+  .card-hover:hover { transform: none; box-shadow: none; }
+}

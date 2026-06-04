@@ -15,6 +15,7 @@ const mainNav = [
 const moreNav = [
   { to: '/cv',            label: 'السيرة الذاتية' },
   { to: '/letter',        label: 'رسالة التقديم' },
+  { to: '/skills',        label: 'مهاراتي وأدواتي' },
   { to: '/reports',       label: 'التقارير' },
   { to: '/contacts',      label: 'جهات الاتصال' },
   { to: '/stats',         label: 'الإحصائيات' },

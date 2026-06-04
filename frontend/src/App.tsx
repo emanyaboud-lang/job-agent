@@ -14,6 +14,7 @@ import Settings     from '@/pages/Settings'
 import EventLog     from '@/pages/EventLog'
 import Reports      from '@/pages/Reports'
 import Contacts     from '@/pages/Contacts'
+import Skills       from '@/pages/Skills'
 
 const qc = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="log"            element={<EventLog />} />
             <Route path="reports"        element={<Reports />} />
             <Route path="contacts"       element={<Contacts />} />
+            <Route path="skills"         element={<Skills />} />
           </Route>
         </Routes>
       </BrowserRouter>

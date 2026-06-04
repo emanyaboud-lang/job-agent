@@ -4,7 +4,7 @@ import { useStore } from '@/store/useStore'
 import {
   LayoutDashboard, Briefcase, SendHorizonal, Mail,
   FileText, PenLine, BarChart2, Settings, ScrollText,
-  XCircle, ChevronRight, TrendingUp, Users,
+  XCircle, ChevronRight, TrendingUp, Users, Sparkles,
 } from 'lucide-react'
 
 const nav = [
@@ -14,6 +14,7 @@ const nav = [
   { to: '/emails',       icon: Mail,            label: 'الإيميلات' },
   { to: '/cv',           icon: FileText,        label: 'السيرة الذاتية' },
   { to: '/letter',       icon: PenLine,         label: 'رسالة التقديم' },
+  { to: '/skills',       icon: Sparkles,        label: 'مهاراتي' },
   { to: '/reports',      icon: TrendingUp,      label: 'التقارير' },
   { to: '/contacts',     icon: Users,           label: 'جهات الاتصال' },
   { to: '/stats',        icon: BarChart2,       label: 'الإحصائيات' },
