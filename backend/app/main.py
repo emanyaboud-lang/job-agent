@@ -68,14 +68,8 @@ async def health_full():
 
     # Gmail
     try:
-        from app.services.gmail_service import get_gmail_service
-        from app.core.config import settings as cfg
-        if not cfg.GMAIL_REFRESH_TOKEN:
-            results["gmail"] = {"ok": False, "detail": "GMAIL_REFRESH_TOKEN غير مضبوط"}
-        else:
-            svc = get_gmail_service()
-            profile = svc.users().getProfile(userId="me").execute()
-            results["gmail"] = {"ok": True, "detail": f"متصل ({profile.get('emailAddress','')})"}
+        from app.services.gmail_service import check_connection
+        results["gmail"] = check_connection()
     except Exception as e:
         results["gmail"] = {"ok": False, "detail": str(e)[:80]}
 

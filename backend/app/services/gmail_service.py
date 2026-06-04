@@ -1,24 +1,14 @@
 import base64
+import smtplib
+import imaplib
 import email as email_lib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
 from app.core.config import settings
 from typing import Optional
 import os
-
-def get_gmail_service():
-    creds = Credentials(
-        token=None,
-        refresh_token=settings.GMAIL_REFRESH_TOKEN,
-        client_id=settings.GMAIL_CLIENT_ID,
-        client_secret=settings.GMAIL_CLIENT_SECRET,
-        token_uri="https://oauth2.googleapis.com/token",
-    )
-    return build("gmail", "v1", credentials=creds)
 
 def send_email(
     to: str,
@@ -27,8 +17,7 @@ def send_email(
     attachment_path: Optional[str] = None,
     tracking_pixel_url: Optional[str] = None,
 ) -> dict:
-    service = get_gmail_service()
-    msg = MIMEMultipart()
+    msg = MIMEMultipart("alternative")
     msg["From"] = settings.GMAIL_SENDER_EMAIL
     msg["To"] = to
     msg["Subject"] = subject
@@ -36,7 +25,8 @@ def send_email(
     html_body = body.replace("\n", "<br>")
     if tracking_pixel_url:
         html_body += f'<img src="{tracking_pixel_url}" width="1" height="1" alt="" style="display:none"/>'
-    
+
+    msg.attach(MIMEText(body, "plain"))
     msg.attach(MIMEText(html_body, "html"))
 
     if attachment_path and os.path.exists(attachment_path):
@@ -48,40 +38,58 @@ def send_email(
         part.add_header("Content-Disposition", f"attachment; filename={filename}")
         msg.attach(part)
 
-    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-    result = service.users().messages().send(userId="me", body={"raw": raw}).execute()
-    return result
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(settings.GMAIL_SENDER_EMAIL, settings.GMAIL_APP_PASSWORD)
+        server.sendmail(settings.GMAIL_SENDER_EMAIL, to, msg.as_string())
 
-def get_messages(max_results: int = 50, query: str = "") -> list:
-    service = get_gmail_service()
-    result = service.users().messages().list(userId="me", maxResults=max_results, q=query).execute()
-    messages = result.get("messages", [])
-    details = []
-    for m in messages[:20]:
-        detail = service.users().messages().get(userId="me", id=m["id"], format="full").execute()
-        details.append(parse_message(detail))
-    return details
+    return {"status": "sent", "to": to}
 
-def parse_message(msg: dict) -> dict:
-    headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
-    body = extract_body(msg.get("payload", {}))
+def get_messages(max_results: int = 20, query: str = "") -> list:
+    try:
+        mail = imaplib.IMAP4_SSL("imap.gmail.com")
+        mail.login(settings.GMAIL_SENDER_EMAIL, settings.GMAIL_APP_PASSWORD)
+        mail.select("inbox")
+
+        search = f'({query})' if query else 'ALL'
+        _, data = mail.search(None, search)
+        ids = data[0].split()[-max_results:]
+
+        messages = []
+        for num in reversed(ids):
+            _, msg_data = mail.fetch(num, "(RFC822)")
+            msg = email_lib.message_from_bytes(msg_data[0][1])
+            messages.append(parse_message(msg))
+
+        mail.logout()
+        return messages
+    except Exception as e:
+        return []
+
+def parse_message(msg) -> dict:
+    body = ""
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() == "text/plain":
+                body = part.get_payload(decode=True).decode("utf-8", errors="replace")
+                break
+    else:
+        body = msg.get_payload(decode=True).decode("utf-8", errors="replace")
+
     return {
-        "gmail_id": msg["id"],
-        "thread_id": msg.get("threadId"),
-        "subject": headers.get("Subject", ""),
-        "from_email": headers.get("From", ""),
-        "to_email": headers.get("To", ""),
-        "date": headers.get("Date", ""),
+        "gmail_id": msg.get("Message-ID", ""),
+        "thread_id": msg.get("Thread-Index", ""),
+        "subject": msg.get("Subject", ""),
+        "from_email": msg.get("From", ""),
+        "to_email": msg.get("To", ""),
+        "date": msg.get("Date", ""),
         "body": body,
-        "snippet": msg.get("snippet", ""),
+        "snippet": body[:150],
     }
 
-def extract_body(payload: dict) -> str:
-    if payload.get("body", {}).get("data"):
-        return base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8", errors="replace")
-    for part in payload.get("parts", []):
-        if part.get("mimeType") in ("text/plain", "text/html"):
-            data = part.get("body", {}).get("data", "")
-            if data:
-                return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
-    return ""
+def check_connection() -> dict:
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(settings.GMAIL_SENDER_EMAIL, settings.GMAIL_APP_PASSWORD)
+        return {"ok": True, "detail": f"متصل ({settings.GMAIL_SENDER_EMAIL})"}
+    except Exception as e:
+        return {"ok": False, "detail": str(e)[:80]}
