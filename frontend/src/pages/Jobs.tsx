@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { jobsApi, featuresApi } from '@/lib/api'
 import { Job, City, Platform } from '@/types'
@@ -399,33 +399,65 @@ function JobCard({ job, expanded, onToggle, onApprove, onReject, onStar, onNotes
   onFakeCheck: () => void
   onTranslate: () => void
 }) {
+  // Company initial for avatar
+  const initial = job.company?.charAt(0) || '؟'
+  const avatarGradients = [
+    'from-sky-400 to-blue-600',
+    'from-emerald-400 to-teal-600',
+    'from-violet-400 to-purple-600',
+    'from-amber-400 to-orange-600',
+    'from-rose-400 to-pink-600',
+    'from-indigo-400 to-blue-600',
+  ]
+  const avatarGrad = avatarGradients[(job.company?.charCodeAt(0) ?? 0) % avatarGradients.length]
+
   return (
-    <div className={cn('card flex flex-col gap-3 transition-all duration-200',
+    <div className={cn('card-hover flex flex-col gap-3 transition-all duration-200',
       compact ? 'p-3' : 'p-4',
-      job.is_vision2030 && 'border-primary-200 dark:border-primary-800',
-      job.is_starred && 'border-amber-200 dark:border-amber-800',
-      compareSelected && 'ring-2 ring-primary-400 dark:ring-primary-600',
+      job.is_vision2030 && 'border-sky-200 dark:border-sky-500/20',
+      job.is_starred && 'border-amber-200 dark:border-amber-500/20',
+      compareSelected && 'ring-2 ring-sky-400 dark:ring-sky-500/60',
     )}>
+      {/* Starred glow accent */}
+      {job.is_starred && (
+        <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ boxShadow: '0 0 0 1px rgba(245,158,11,0.2), 0 0 20px rgba(245,158,11,0.05)' }} />
+      )}
+
       {/* Header */}
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3">
+        {/* Company avatar */}
+        {!compact && (
+          <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br text-white font-black text-sm shadow-sm', avatarGrad)}>
+            {initial}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             {job.is_vision2030 && <Star size={12} className="text-amber-400 fill-amber-400 shrink-0" />}
-            <h3 className={cn('font-semibold truncate', compact ? 'text-xs' : 'text-sm')}>{job.title}</h3>
+            <h3 className={cn('font-bold truncate', compact ? 'text-xs' : 'text-sm')}>{job.title}</h3>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{job.company}</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">{job.company}</p>
           {/* AI Summary */}
           {summary && (
-            <p className="text-xs text-primary-600 dark:text-primary-400 mt-0.5 italic">{summary}</p>
+            <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5 italic">{summary}</p>
           )}
           {/* Fake check */}
           {fakeCheck && (
-            <span className={cn('text-xs px-2 py-0.5 rounded-full mt-0.5 inline-block', fakeCheck.is_fake ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300')}>
+            <span className={cn('text-xs px-2 py-0.5 rounded-full mt-0.5 inline-block font-medium', fakeCheck.is_fake ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300')}>
               {fakeCheck.is_fake ? `⚠️ مشبوهة (${fakeCheck.confidence}%)` : `✓ موثوقة (${fakeCheck.confidence}%)`}
             </span>
           )}
         </div>
-        <span className={cn('badge shrink-0', matchScoreBg(job.match_score))}>{job.match_score}%</span>
+        {/* Match score ring */}
+        <div
+          className="match-ring shrink-0 text-gray-700 dark:text-white font-black"
+          style={{
+            '--ring-color': job.match_score >= 80 ? '#10b981' : job.match_score >= 60 ? '#0ea5e9' : '#f59e0b',
+            '--ring-pct': `${job.match_score}%`,
+          } as React.CSSProperties}
+        >
+          {job.match_score}%
+        </div>
       </div>
 
       {!compact && (

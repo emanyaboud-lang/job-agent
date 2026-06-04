@@ -48,7 +48,7 @@ export default function Header() {
   const todayTotal = Object.values(agentStatus?.agent2.sent_today ?? {}).reduce((a, b) => a + b, 0)
 
   return (
-    <header className="h-14 md:h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center px-3 md:px-4 gap-2 md:gap-3 shrink-0 z-10">
+    <header className="h-14 md:h-16 bg-white/90 dark:bg-[rgba(8,13,26,0.8)] dark:backdrop-blur-xl border-b border-gray-100/80 dark:border-white/[0.06] flex items-center px-3 md:px-4 gap-2 md:gap-3 shrink-0 z-10">
       {/* Logo — mobile only (no sidebar) */}
       <div className="flex items-center gap-2 lg:hidden">
         <div className="w-7 h-7 rounded-xl bg-primary-500 flex items-center justify-center shrink-0">
@@ -74,15 +74,15 @@ export default function Header() {
 
       <div className="flex items-center gap-1 md:gap-2 mr-auto">
         {/* Today's applications count */}
-        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-sm font-medium">
+        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20 text-sky-700 dark:text-sky-300 text-sm font-bold">
           <span>{todayTotal}</span>
-          <span className="text-primary-500">تقديم اليوم</span>
+          <span className="text-sky-500/80 font-medium">تقديم اليوم</span>
         </div>
 
         {/* Agent 1 status */}
-        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm">
-          <span className={`w-2 h-2 rounded-full animate-pulse-dot ${agent1Running ? 'bg-green-500' : 'bg-gray-400'}`} />
-          <span className="text-gray-600 dark:text-gray-400 text-xs">
+        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-100 dark:border-white/[0.06] text-sm">
+          <span className={`w-2 h-2 rounded-full animate-pulse-dot ${agent1Running ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+          <span className="text-gray-600 dark:text-slate-400 text-xs">
             {agent1Running ? 'Agent 1 يبحث' : 'Agent 1 موقوف'}
           </span>
         </div>

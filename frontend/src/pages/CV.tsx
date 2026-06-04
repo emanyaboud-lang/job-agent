@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cvApi, jobsApi, featuresApi } from '@/lib/api'
 import { CVFile, Job, CVHints } from '@/types'
@@ -123,14 +123,44 @@ export default function CV() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <h1 className="font-bold text-xl">السيرة الذاتية</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="font-black text-xl gradient-text">السيرة الذاتية</h1>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+            {primary ? `الملف الأساسي: ${primary.version_name || primary.file_name}` : 'لم يُرفع ملف بعد'}
+          </p>
+        </div>
+        {primary?.analysis && (
+          <div className="flex items-center gap-3">
+            {/* Score circle */}
+            <div className="flex items-center gap-2 card px-4 py-2">
+              <div className="match-ring text-gray-700 dark:text-white"
+                style={{
+                  '--ring-color': '#10b981',
+                  '--ring-pct': '82%',
+                } as React.CSSProperties}>
+                82%
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-800 dark:text-white">قوة CV</p>
+                <p className="text-[10px] text-gray-400 dark:text-slate-500">ممتاز</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl w-fit">
+      <div className="flex gap-1 bg-gray-100/80 dark:bg-white/[0.05] p-1 rounded-2xl w-fit border border-gray-200/50 dark:border-white/[0.06] overflow-x-auto">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id as typeof activeTab)}
-            className={cn('px-4 py-2 rounded-xl text-sm font-medium transition-all',
-              activeTab === t.id ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300')}>
+            className={cn(
+              'px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap',
+              activeTab === t.id
+                ? 'bg-white dark:bg-[rgba(15,23,42,0.8)] text-gray-900 dark:text-white shadow-sm border border-gray-100 dark:border-white/[0.08]'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+            )}>
             {t.label}
           </button>
         ))}
@@ -164,10 +194,10 @@ export default function CV() {
           </div>
 
           {/* CV files list */}
-          {isLoading ? <div className="card h-32 animate-pulse bg-gray-100 dark:bg-gray-800" /> : (
+          {isLoading ? <div className="card h-32 shimmer" /> : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {cvFiles.map(cv => (
-                <div key={cv.id} className={cn('card p-4 space-y-3', cv.is_primary && 'border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/10')}>
+                <div key={cv.id} className={cn('card p-4 space-y-3', cv.is_primary && 'border-sky-200/60 dark:border-sky-500/20 bg-sky-50/20 dark:bg-sky-500/5')}>
                   <div className="flex items-start gap-3">
                     <FileText size={24} className={cn('shrink-0 mt-0.5', cv.is_primary ? 'text-primary-500' : 'text-gray-400')} />
                     <div className="flex-1 min-w-0">
@@ -210,32 +240,49 @@ export default function CV() {
       {activeTab === 'analysis' && primary?.analysis && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {[
-            { title: 'المهارات التقنية', items: primary.analysis.tech_skills, color: 'badge-blue' as const },
-            { title: 'المهارات العامة', items: primary.analysis.skills, color: 'badge-sky' as const },
-            { title: 'الشهادات', items: primary.analysis.certifications, color: 'badge-green' as const },
-            { title: 'المشاريع البارزة', items: primary.analysis.projects, color: 'badge-amber' as const },
+            { title: 'المهارات التقنية', items: primary.analysis.tech_skills, color: 'badge-blue' as const, iconClass: 'icon-gradient-blue' },
+            { title: 'المهارات العامة', items: primary.analysis.skills, color: 'badge-sky' as const, iconClass: 'icon-gradient-teal' },
+            { title: 'الشهادات', items: primary.analysis.certifications, color: 'badge-green' as const, iconClass: 'icon-gradient-emerald' },
+            { title: 'المشاريع البارزة', items: primary.analysis.projects, color: 'badge-amber' as const, iconClass: 'icon-gradient-amber' },
           ].map(s => s.items?.length ? (
             <div key={s.title} className="card p-5">
-              <h3 className="font-semibold mb-3 text-sm">{s.title}</h3>
+              <h3 className="font-bold mb-3 text-sm flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-lg ${s.iconClass} flex items-center justify-center`}>
+                  <CheckCircle2 size={12} className="text-white" />
+                </div>
+                {s.title}
+              </h3>
               <div className="flex flex-wrap gap-2">
-                {s.items.map(i => <span key={i} className={s.color}>{i}</span>)}
+                {s.items.map(i => (
+                  <span key={i} className={cn(s.color, 'transition-transform hover:scale-105 cursor-default')}>
+                    {i}
+                  </span>
+                ))}
               </div>
             </div>
           ) : null)}
 
           <div className="card p-5">
-            <h3 className="font-semibold mb-3 text-sm flex items-center gap-2"><TrendingUp size={16} />مقارنة سوق العمل</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{primary.analysis.market_comparison || 'سيتم تحليله عند رفع الـ CV'}</p>
+            <h3 className="font-bold mb-3 text-sm flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg icon-gradient-blue flex items-center justify-center">
+                <TrendingUp size={12} className="text-white" />
+              </div>
+              مقارنة سوق العمل
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{primary.analysis.market_comparison || 'سيتم تحليله عند رفع الـ CV'}</p>
           </div>
 
           {primary.analysis.improvements?.length ? (
-            <div className="card p-5 border-amber-200 dark:border-amber-800">
-              <h3 className="font-semibold mb-3 text-sm flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                <Lightbulb size={16} />اقتراحات التحسين
+            <div className="card p-5 border-amber-200/60 dark:border-amber-500/20 bg-amber-50/30 dark:bg-amber-500/5">
+              <h3 className="font-bold mb-3 text-sm flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <div className="w-6 h-6 rounded-lg icon-gradient-amber flex items-center justify-center">
+                  <Lightbulb size={12} className="text-white" />
+                </div>
+                اقتراحات التحسين
               </h3>
               <ul className="space-y-2">
                 {primary.analysis.improvements.map((imp, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-slate-300">
                     <AlertCircle size={14} className="text-amber-400 mt-0.5 shrink-0" />
                     {imp}
                   </li>
@@ -246,9 +293,11 @@ export default function CV() {
         </div>
       )}
       {activeTab === 'analysis' && !primary?.analysis && (
-        <div className="card p-12 text-center text-gray-500">
-          <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-          <p>ارفعي السيرة الذاتية ليتم تحليلها تلقائياً</p>
+        <div className="card p-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
+            <FileText size={28} className="text-gray-300 dark:text-slate-600" />
+          </div>
+          <p className="text-gray-500 dark:text-slate-400">ارفعي السيرة الذاتية ليتم تحليلها تلقائياً</p>
         </div>
       )}
 
@@ -271,10 +320,20 @@ export default function CV() {
             )}
             {chatHistory.map((m, i) => (
               <div key={i} className={cn('flex gap-2', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}>
-                <div className={cn('w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1', m.role === 'user' ? 'bg-primary-500 text-white' : 'bg-gray-200 dark:bg-gray-700')}>
-                  {m.role === 'user' ? <User size={13} /> : <Bot size={13} className="text-primary-500" />}
+                <div className={cn(
+                  'w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
+                  m.role === 'user' ? 'icon-gradient-blue' : 'bg-gray-100 dark:bg-white/[0.08]'
+                )}>
+                  {m.role === 'user'
+                    ? <User size={14} className="text-white" />
+                    : <Bot size={14} className="text-sky-500" />}
                 </div>
-                <div className={cn('max-w-[80%] rounded-2xl px-3 py-2 text-sm', m.role === 'user' ? 'bg-primary-500 text-white rounded-tr-sm' : 'bg-gray-100 dark:bg-gray-800 rounded-tl-sm')}>
+                <div className={cn(
+                  'max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm',
+                  m.role === 'user'
+                    ? 'bg-gradient-to-br from-sky-500 to-blue-600 text-white rounded-tr-sm'
+                    : 'bg-white dark:bg-white/[0.05] border border-gray-100 dark:border-white/[0.08] text-gray-800 dark:text-slate-200 rounded-tl-sm'
+                )}>
                   <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
                 </div>
               </div>

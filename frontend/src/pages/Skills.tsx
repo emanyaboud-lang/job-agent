@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ExternalLink, Star, Zap, Code2, Palette, Search, Cpu, Globe, BookOpen, Layers, Sparkles, Brain, TrendingUp, Settings2 } from 'lucide-react'
 
 type Skill = {
@@ -192,54 +192,87 @@ const SKILLS: Skill[] = [
 ]
 
 const CATEGORIES = [
-  { id: 'all',         label: 'الكل' },
-  { id: 'ai',          label: 'ذكاء اصطناعي' },
-  { id: 'design',      label: 'تصميم' },
-  { id: 'dev',         label: 'تطوير' },
-  { id: 'business',    label: 'أعمال' },
-  { id: 'productivity',label: 'إنتاجية' },
+  { id: 'all',          label: 'الكل' },
+  { id: 'ai',           label: 'ذكاء اصطناعي' },
+  { id: 'design',       label: 'تصميم' },
+  { id: 'dev',          label: 'تطوير' },
+  { id: 'business',     label: 'أعمال' },
+  { id: 'productivity', label: 'إنتاجية' },
 ]
+
+// Floating bubble positions for constellation
+const BUBBLES = [
+  { label: 'React', x: '12%',  y: '20%', size: 'text-xs', delay: '0s' },
+  { label: 'AI',    x: '75%',  y: '15%', size: 'text-sm', delay: '1s' },
+  { label: 'UX',    x: '88%',  y: '55%', size: 'text-xs', delay: '2s' },
+  { label: 'PMP',   x: '20%',  y: '70%', size: 'text-xs', delay: '0.5s' },
+  { label: 'CSS',   x: '60%',  y: '75%', size: 'text-xs', delay: '1.5s' },
+  { label: 'Claude',x: '45%',  y: '25%', size: 'text-xs', delay: '2.5s' },
+]
+
+function SkillBar({ level, color }: { level: number; color: string }) {
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(level * 20), 100)
+    return () => clearTimeout(t)
+  }, [level])
+  return (
+    <div className="skill-bar">
+      <div
+        className={`h-full bg-gradient-to-r ${color} rounded-full`}
+        style={{ width: `${width}%`, transition: 'width 700ms cubic-bezier(0.23, 1, 0.32, 1)' }}
+      />
+    </div>
+  )
+}
 
 function SkillCard({ skill }: { skill: Skill }) {
   const Icon = skill.icon
   return (
-    <div className="card p-5 space-y-3 stagger-item group">
+    <div className="card-hover p-5 space-y-3 stagger-item relative overflow-hidden">
+      {/* Subtle gradient accent top-right */}
+      <div
+        className={`absolute top-0 left-0 w-24 h-24 bg-gradient-to-br ${skill.color} opacity-5 rounded-full -translate-x-8 -translate-y-8 pointer-events-none`}
+      />
+
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${skill.color} flex items-center justify-center shrink-0 shadow-sm`}>
+          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${skill.color} flex items-center justify-center shrink-0 shadow-lg`}>
             <Icon size={20} className="text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-sm">{skill.nameAr}</h3>
+              <h3 className="font-bold text-sm">{skill.nameAr}</h3>
               {skill.link && (
                 <a href={skill.link} target="_blank" rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-primary-500 transition-colors">
-                  <ExternalLink size={12} />
+                  className="text-gray-400 hover:text-sky-500 transition-colors">
+                  <ExternalLink size={11} />
                 </a>
               )}
             </div>
-            <p className="text-xs text-gray-400">{skill.name}</p>
+            <p className="text-xs text-gray-400 dark:text-slate-500">{skill.name}</p>
           </div>
         </div>
+        {/* Star rating */}
         <div className="flex gap-0.5 shrink-0">
           {[1,2,3,4,5].map(i => (
             <Star key={i} size={12}
-              className={i <= skill.level ? 'text-amber-400 fill-amber-400' : 'text-gray-200 dark:text-gray-700'} />
+              className={i <= skill.level
+                ? 'text-amber-400 fill-amber-400'
+                : 'text-gray-200 dark:text-gray-700 fill-gray-200 dark:fill-gray-700'} />
           ))}
         </div>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{skill.description}</p>
+
+      <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">{skill.description}</p>
+
       <div className="flex flex-wrap gap-1.5">
         {skill.tags.map(tag => (
           <span key={tag} className="badge-gray text-[10px] px-2 py-0.5">{tag}</span>
         ))}
       </div>
-      {/* Skill level bar */}
-      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-        <div className={`h-full bg-gradient-to-r ${skill.color} rounded-full`}
-          style={{ width: `${skill.level * 20}%`, transition: 'width 600ms var(--ease-out)' }} />
-      </div>
+
+      <SkillBar level={skill.level} color={skill.color} />
     </div>
   )
 }
@@ -250,7 +283,10 @@ export default function Skills() {
 
   const filtered = SKILLS.filter(s => {
     const matchCat = activeCategory === 'all' || s.category === activeCategory
-    const matchSearch = !search || s.nameAr.includes(search) || s.name.toLowerCase().includes(search.toLowerCase()) || s.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
+    const matchSearch = !search ||
+      s.nameAr.includes(search) ||
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
     return matchCat && matchSearch
   })
 
@@ -258,64 +294,86 @@ export default function Skills() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-bold text-xl">مهاراتي وأدواتي</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{SKILLS.length} مهارة • مستوى عام {totalLevel}%</p>
+
+      {/* ── Constellation Hero ── */}
+      <div className="hero-banner p-6 md:p-8 text-white relative overflow-hidden" style={{ minHeight: 140 }}>
+        {/* Floating skill bubbles */}
+        {BUBBLES.map((b, i) => (
+          <div
+            key={i}
+            className="absolute pointer-events-none select-none"
+            style={{
+              left: b.x, top: b.y,
+              animation: `float 6s ease-in-out ${b.delay} infinite`,
+            }}
+          >
+            <div className="bg-white/10 border border-white/20 rounded-full px-2.5 py-1 backdrop-blur-sm">
+              <span className={`${b.size} font-bold text-white/80`}>{b.label}</span>
+            </div>
+          </div>
+        ))}
+
+        {/* Content */}
+        <div className="relative z-10">
+          <p className="text-sky-300/80 text-sm font-medium mb-1">ترسانتي المهنية</p>
+          <h1 className="text-2xl md:text-3xl font-black mb-2">مهاراتي وأدواتي</h1>
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-32 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sky-400 to-violet-500"
+                  style={{ width: `${totalLevel}%` }}
+                />
+              </div>
+              <span className="text-sm font-bold text-sky-300">{totalLevel}%</span>
+            </div>
+            <span className="text-white/60 text-sm">{SKILLS.length} مهارة</span>
+          </div>
         </div>
+      </div>
+
+      {/* ── Category stats row ── */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {CATEGORIES.filter(c => c.id !== 'all').map(cat => {
+          const catSkills = SKILLS.filter(s => s.category === cat.id)
+          const avg = catSkills.length ? Math.round(catSkills.reduce((a, s) => a + s.level, 0) / catSkills.length * 20) : 0
+          return (
+            <div key={cat.id} className="card p-3 text-center">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">{cat.label}</p>
+              <p className="text-xl font-black gradient-text">{avg}%</p>
+              <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">{catSkills.length} مهارة</p>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Search + Filter toolbar ── */}
+      <div className="flex items-center gap-3 flex-wrap">
         <input
           className="input text-sm w-48"
           placeholder="ابحثي عن مهارة..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-      </div>
-
-      {/* Overall progress */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium">المستوى العام</span>
-          <span className="text-sm font-bold text-primary-600">{totalLevel}%</span>
-        </div>
-        <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-full"
-            style={{ width: `${totalLevel}%`, transition: 'width 800ms var(--ease-out)' }} />
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-          {CATEGORIES.filter(c => c.id !== 'all').map(cat => {
-            const catSkills = SKILLS.filter(s => s.category === cat.id)
-            const avg = catSkills.length ? Math.round(catSkills.reduce((a, s) => a + s.level, 0) / catSkills.length * 20) : 0
-            return (
-              <div key={cat.id} className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                <p className="text-xs text-gray-500 mb-1">{cat.label}</p>
-                <p className="text-lg font-bold text-primary-600">{avg}%</p>
-              </div>
-            )
-          })}
+        <div className="flex gap-1.5 flex-wrap">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`cat-pill ${activeCategory === cat.id ? 'active' : ''}`}
+            >
+              {cat.label}
+              <span className="mr-1 opacity-60 text-xs">
+                {cat.id === 'all' ? SKILLS.length : SKILLS.filter(s => s.category === cat.id).length}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Category filter */}
-      <div className="flex gap-1.5 flex-wrap">
-        {CATEGORIES.map(cat => (
-          <button key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
-              activeCategory === cat.id
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}>
-            {cat.label}
-            <span className="mr-1 opacity-60">
-              {cat.id === 'all' ? SKILLS.length : SKILLS.filter(s => s.category === cat.id).length}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Skills grid */}
+      {/* ── Skills grid ── */}
       {filtered.length === 0 ? (
-        <div className="card p-12 text-center text-gray-400">لا توجد مهارات مطابقة</div>
+        <div className="card p-12 text-center text-gray-400 dark:text-slate-500">لا توجد مهارات مطابقة</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(skill => <SkillCard key={skill.name} skill={skill} />)}

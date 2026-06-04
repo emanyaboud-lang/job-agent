@@ -9,7 +9,7 @@ export default function Layout() {
   const location = useLocation()
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen overflow-hidden bg-[#f0f4ff] dark:bg-[#080d1a]">
       {/* Sidebar — desktop only */}
       <Sidebar />
 
