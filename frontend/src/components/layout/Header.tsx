@@ -6,13 +6,15 @@ import { agentsApi, notificationsApi } from '@/lib/api'
 import { timeAgo } from '@/lib/utils'
 import {
   Menu, Search, Bell, Sun, Moon, Zap, ZapOff,
-  CheckCheck, ChevronDown,
+  CheckCheck, ChevronDown, Sparkles,
 } from 'lucide-react'
+import QuickApplyWizard from '@/components/wizard/QuickApplyWizard'
 
 export default function Header() {
   const { theme, setTheme, sidebarOpen, setSidebarOpen, unreadCount, notifications, markAllRead, agentStatus, setAgentStatus, globalSearch, setGlobalSearch } = useStore()
   const [bellOpen, setBellOpen] = useState(false)
   const [searchFocus, setSearchFocus] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
@@ -72,7 +74,19 @@ export default function Header() {
         />
       </div>
 
+      {/* Quick Apply Wizard */}
+      {wizardOpen && <QuickApplyWizard onClose={() => setWizardOpen(false)} />}
+
       <div className="flex items-center gap-1 md:gap-2 mr-auto">
+        {/* Quick Apply Button */}
+        <button
+          onClick={() => setWizardOpen(true)}
+          className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-violet-500 text-white text-xs font-bold shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 hover:scale-105 transition-all duration-200"
+          style={{ boxShadow: '0 0 20px rgba(14,165,233,0.3)' }}
+        >
+          <Sparkles size={13} />
+          تقدم سريع
+        </button>
         {/* Today's applications count */}
         <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20 text-sky-700 dark:text-sky-300 text-sm font-bold">
           <span>{todayTotal}</span>
