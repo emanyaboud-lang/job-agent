@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
 import os, shutil, uuid
 from datetime import datetime
 from app.services.supabase_service import get_client, log_event
@@ -23,7 +23,7 @@ async def list_cvs():
     return r.data or []
 
 @router.post("/upload")
-async def upload_cv(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
+async def upload_cv(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(400, "لم يتم اختيار ملف")
 

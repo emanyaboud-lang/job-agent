@@ -48,6 +48,20 @@ app.include_router(interview.router,      prefix="/api/interview-prep", tags=["I
 async def health():
     return {"status": "ok", "version": "1.0.0"}
 
+@app.post("/api/health/test-email")
+async def test_email():
+    try:
+        from app.services.gmail_service import send_email
+        from app.core.config import settings as cfg
+        send_email(
+            to=cfg.GMAIL_SENDER_EMAIL,
+            subject="✅ Job Agents — اختبار الإيميل",
+            body="مرحباً إيمان!\n\nهذا إيميل اختبار من نظام Job Agents.\nكل شيء يعمل بشكل صحيح ✅\n\nJob Agents System"
+        )
+        return {"ok": True, "detail": f"تم إرسال إيميل اختبار إلى {cfg.GMAIL_SENDER_EMAIL}"}
+    except Exception as e:
+        return {"ok": False, "detail": str(e)[:150]}
+
 @app.get("/api/health/full")
 async def health_full():
     import time

@@ -92,6 +92,23 @@ export default function Settings() {
   const [fullCheck, setFullCheck] = useState<FullCheckResult | null>(null)
   const [checking, setChecking] = useState(false)
 
+  const [testEmail, setTestEmail] = useState<{ ok: boolean; detail: string } | null>(null)
+  const [testingEmail, setTestingEmail] = useState(false)
+
+  const runTestEmail = async () => {
+    setTestingEmail(true)
+    setTestEmail(null)
+    try {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/health/test-email', { method: 'POST' })
+      const data = await res.json()
+      setTestEmail(data)
+    } catch {
+      setTestEmail({ ok: false, detail: 'تعذّر الاتصال بالخادم' })
+    } finally {
+      setTestingEmail(false)
+    }
+  }
+
   const runFullCheck = async () => {
     setChecking(true)
     setFullCheck(null)
@@ -244,6 +261,26 @@ export default function Settings() {
                     )
                   })}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* زر اختبار الإيميل */}
+          <div className="card p-5 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2"><Mail size={16} className="text-red-500" />اختبار الإيميل</h3>
+                <p className="text-xs text-gray-400 mt-0.5">يرسل إيميل تجريبي لنفسك عشان تتأكد أن الإرسال يعمل</p>
+              </div>
+              <button onClick={runTestEmail} disabled={testingEmail}
+                className="btn-ghost text-sm flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl disabled:opacity-60">
+                {testingEmail ? <><RefreshCw size={14} className="animate-spin" />جارٍ الإرسال...</> : <><Mail size={14} />أرسل إيميل اختبار</>}
+              </button>
+            </div>
+            {testEmail && (
+              <div className={`flex items-center gap-2 p-3 rounded-xl text-sm ${testEmail.ok ? 'bg-green-50 dark:bg-green-900/20 text-green-700' : 'bg-red-50 dark:bg-red-900/20 text-red-600'}`}>
+                {testEmail.ok ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                {testEmail.detail}
               </div>
             )}
           </div>
