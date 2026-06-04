@@ -70,6 +70,7 @@ export const emailsApi = {
 export const agentsApi = {
   status:     ()               => get('/agents/status'),
   search:     ()               => post('/agents/search', {}),
+  demoSearch: ()               => post('/agents/search/demo', {}),
   toggle1:    (active: boolean) => post('/agents/1/toggle', { active }),
   toggle2:    (active: boolean) => post('/agents/2/toggle', { active }),
 }

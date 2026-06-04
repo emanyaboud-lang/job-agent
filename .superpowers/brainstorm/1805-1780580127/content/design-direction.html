@@ -1,0 +1,120 @@
+<h2>اتجاه التصميم العام</h2>
+<p class="subtitle">اختاري الأسلوب البصري الأقرب لتصوّرك — سنبني كل الصفحات بناءً على اختيارك</p>
+
+<div class="cards">
+
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#080d1a; padding:16px; min-height:200px; position:relative; overflow:hidden;">
+      <!-- Glow effects -->
+      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(14,165,233,0.25) 0%,transparent 70%);pointer-events:none;"></div>
+      <div style="position:absolute;bottom:-30px;left:-30px;width:140px;height:140px;background:radial-gradient(circle,rgba(139,92,246,0.2) 0%,transparent 70%);pointer-events:none;"></div>
+      <!-- Stat card -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;margin-bottom:10px;backdrop-filter:blur(12px);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:flex;align-items:center;justify-content:center;">
+            <span style="color:white;font-size:14px;">📊</span>
+          </div>
+          <div>
+            <div style="color:rgba(255,255,255,0.4);font-size:10px;">تقديمات اليوم</div>
+            <div style="color:white;font-size:22px;font-weight:900;line-height:1;">12</div>
+          </div>
+          <div style="margin-right:auto;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;">+3 ↑</div>
+        </div>
+        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:999px;">
+          <div style="height:100%;width:65%;background:linear-gradient(90deg,#0ea5e9,#6366f1);border-radius:999px;"></div>
+        </div>
+      </div>
+      <!-- Agent status pill -->
+      <div style="display:flex;gap:6px;">
+        <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:20px;padding:4px 12px;font-size:11px;color:#34d399;display:flex;align-items:center;gap:5px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></div>
+          Agent 1 يبحث
+        </div>
+        <div style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);border-radius:20px;padding:4px 12px;font-size:11px;color:#38bdf8;">5 وظيفة جديدة</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3 style="color:#e2e8f0;">A — Deep Space Dark</h3>
+      <p style="color:#94a3b8;">عميق وقوي — glass morphism مع glows زرقاء وبنفسجية على خلفية داكنة جداً. مناسب للعمل الليلي.</p>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:linear-gradient(135deg,#f0f9ff 0%,#faf5ff 100%); padding:16px; min-height:200px; position:relative; overflow:hidden;">
+      <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(14,165,233,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+      <!-- Stat card -->
+      <div style="background:white;border:1px solid rgba(14,165,233,0.12);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 4px 20px rgba(14,165,233,0.08);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:flex;align-items:center;justify-content:center;">
+            <span style="color:white;font-size:14px;">📊</span>
+          </div>
+          <div>
+            <div style="color:#94a3b8;font-size:10px;">تقديمات اليوم</div>
+            <div style="color:#0f172a;font-size:22px;font-weight:900;line-height:1;">12</div>
+          </div>
+          <div style="margin-right:auto;background:#ecfdf5;border:1px solid #d1fae5;color:#059669;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;">+3 ↑</div>
+        </div>
+        <div style="height:3px;background:#f1f5f9;border-radius:999px;">
+          <div style="height:100%;width:65%;background:linear-gradient(90deg,#0ea5e9,#6366f1);border-radius:999px;"></div>
+        </div>
+      </div>
+      <!-- Pills -->
+      <div style="display:flex;gap:6px;">
+        <div style="background:#ecfdf5;border:1px solid #d1fae5;border-radius:20px;padding:4px 12px;font-size:11px;color:#059669;display:flex;align-items:center;gap:5px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#10b981;"></div>
+          Agent 1 يبحث
+        </div>
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:20px;padding:4px 12px;font-size:11px;color:#0284c7;">5 وظيفة جديدة</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Clean & Professional</h3>
+      <p>نظيف واحترافي — بطاقات بيضاء مع لمسات لونية خفيفة وظلال ناعمة. مناسب للوضع الفاتح.</p>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%); padding:16px; min-height:200px; position:relative; overflow:hidden;">
+      <!-- Mesh gradient -->
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 80% 20%,rgba(139,92,246,0.3) 0%,transparent 50%),radial-gradient(ellipse at 20% 80%,rgba(14,165,233,0.25) 0%,transparent 50%);pointer-events:none;"></div>
+      <!-- Hero stat -->
+      <div style="position:relative;z-index:1;">
+        <div style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(14,165,233,0.15));border:1px solid rgba(139,92,246,0.3);border-radius:20px;padding:16px;margin-bottom:10px;backdrop-filter:blur(20px);">
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;margin-bottom:4px;">مرحباً إيمان 👋</div>
+          <div style="color:white;font-size:26px;font-weight:900;background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">12 تقديم اليوم</div>
+          <div style="display:flex;gap:16px;">
+            <div style="text-align:center;">
+              <div style="color:rgba(255,255,255,0.4);font-size:9px;">هذا الأسبوع</div>
+              <div style="color:white;font-weight:800;font-size:16px;">47</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="color:rgba(255,255,255,0.4);font-size:9px;">معدل الرد</div>
+              <div style="color:#a78bfa;font-weight:800;font-size:16px;">23%</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="color:rgba(255,255,255,0.4);font-size:9px;">مقابلات</div>
+              <div style="color:#38bdf8;font-weight:800;font-size:16px;">3</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button style="background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:12px;padding:6px 14px;color:white;font-size:11px;font-weight:700;cursor:pointer;">ابحثي الآن ⚡</button>
+          <button style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:6px 14px;color:rgba(255,255,255,0.7);font-size:11px;cursor:pointer;">عرض التقارير</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3 style="color:#e2e8f0;">C — Gradient Mesh Dark</h3>
+      <p style="color:#94a3b8;">جريء ومتميز — hero section بـ gradient mesh، stats كبيرة، gradient text. أكثر جرأةً من A.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:24px;padding:16px;background:rgba(14,165,233,0.05);border-radius:12px;border:1px solid rgba(14,165,233,0.15);">
+  <p class="label">ملاحظة</p>
+  <p>كل اتجاه يدعم الوضع الفاتح والداكن — ستأخذين أفضل ما في كل أسلوب. يمكنك اختيار عدة خيارات إذا أردتِ دمجها.</p>
+</div>

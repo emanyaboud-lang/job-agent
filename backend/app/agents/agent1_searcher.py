@@ -65,6 +65,10 @@ async def run_search() -> int:
         except Exception as e:
             log_event("agent1_fallback", f"خطأ في الـ fallback: {e}", "error")
 
+    # الحقول المسموحة في جدول jobs فقط
+    ALLOWED = {"title","company","company_type","city","description","requirements",
+               "apply_url","apply_email","platform","published_at","notes"}
+
     filtered = _deduplicate(all_raw)
     added = 0
     for job in filtered:
@@ -73,9 +77,17 @@ async def run_search() -> int:
             if score < min_score:
                 continue
             is_v2030 = any(k.lower() in (job.get("company", "") + job.get("title", "")).lower() for k in VISION2030_COMPANIES)
-            get_client().table("jobs").insert({**job, "match_score": score, "status": "pending", "is_vision2030": is_v2030, "discovered_at": datetime.utcnow().isoformat()}).execute()
+            clean = {k: v for k, v in job.items() if k in ALLOWED}
+            get_client().table("jobs").insert({
+                **clean,
+                "match_score": score,
+                "status": "pending",
+                "is_vision2030": is_v2030,
+                "discovered_at": datetime.utcnow().isoformat(),
+            }).execute()
             added += 1
-        except Exception:
+        except Exception as e:
+            log_event("insert_job_error", f"خطأ إدراج وظيفة: {e}", "error")
             continue
 
     try:

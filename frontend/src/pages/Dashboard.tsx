@@ -110,7 +110,21 @@ export default function Dashboard() {
 
   const searchNow = useMutation({
     mutationFn: () => agentsApi.search() as Promise<unknown>,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['jobs'] }); refetchStatus() },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['jobs'] })
+      refetchStatus()
+      // تحديث كل 5 ثوانٍ لمدة دقيقة عشان تظهر الوظائف الجديدة
+      let count = 0
+      const iv = setInterval(() => {
+        qc.invalidateQueries({ queryKey: ['jobs'] })
+        if (++count >= 12) clearInterval(iv)
+      }, 5000)
+    },
+  })
+
+  const demoSearch = useMutation({
+    mutationFn: () => agentsApi.demoSearch() as Promise<{ jobs_added: number }>,
+    onSuccess: (data) => qc.invalidateQueries({ queryKey: ['jobs'] }),
   })
 
   const approveAll = useMutation({
@@ -191,14 +205,21 @@ export default function Dashboard() {
             <div className="flex gap-3 flex-wrap">
               <button
                 onClick={() => searchNow.mutate()}
-                disabled={searchNow.isPending || a1?.state === 'running' || pauseMode}
+                disabled={searchNow.isPending || pauseMode}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-semibold text-sm transition-all disabled:opacity-50 shadow-lg shadow-sky-500/30"
-                style={{ transition: 'transform 160ms var(--ease-out), background-color 150ms ease' }}
               >
-                {searchNow.isPending || a1?.state === 'running'
-                  ? <RefreshCw size={15} className="animate-spin" />
-                  : <Search size={15} />}
-                ابحثي الآن
+                {searchNow.isPending
+                  ? <><RefreshCw size={15} className="animate-spin" />جاري البحث...</>
+                  : <><Search size={15} />ابحثي الآن</>}
+              </button>
+              <button
+                onClick={() => demoSearch.mutate()}
+                disabled={demoSearch.isPending || pauseMode}
+                title="أضيفي 5 وظائف تجريبية فوراً"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white font-semibold text-sm transition-all disabled:opacity-50 shadow-lg shadow-violet-500/30"
+              >
+                {demoSearch.isPending ? <RefreshCw size={15} className="animate-spin" /> : <Plus size={15} />}
+                وظائف تجريبية
               </button>
               <button
                 onClick={() => setPauseMode(v => !v)}
@@ -209,10 +230,24 @@ export default function Dashboard() {
                     : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
                 )}
               >
-                {pauseMode ? <><Play size={15} />استئنافي</> : <><Pause size={15} />إيقاف مؤقت</>}
+                {pauseMode ? <><Play size={15} />استئنافي</> : <><Pause size={15} />إيقاف</>}
               </button>
             </div>
           </div>
+
+          {/* Search started notice */}
+          {searchNow.isSuccess && (
+            <div className="mt-4 flex items-center gap-2 bg-sky-500/20 border border-sky-400/30 rounded-xl px-4 py-2.5">
+              <RefreshCw size={15} className="text-sky-300 shrink-0 animate-spin" />
+              <p className="text-sky-200 text-sm">البحث بدأ — ستظهر الوظائف الجديدة خلال دقيقة تلقائياً ✓</p>
+            </div>
+          )}
+          {demoSearch.isSuccess && (
+            <div className="mt-4 flex items-center gap-2 bg-violet-500/20 border border-violet-400/30 rounded-xl px-4 py-2.5">
+              <CheckCircle2 size={15} className="text-violet-300 shrink-0" />
+              <p className="text-violet-200 text-sm">أُضيفت 5 وظائف تجريبية — راجعيها أدناه وافعلي "وافقت" ✓</p>
+            </div>
+          )}
 
           {/* Inline pause mode notice */}
           {pauseMode && (
