@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 import os, shutil, uuid
 from datetime import datetime
 from app.services.supabase_service import get_client, log_event
@@ -9,25 +9,40 @@ router = APIRouter()
 UPLOAD_DIR = "/tmp/cv_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+def _analyze_in_background(cv_id: str, text: str):
+    try:
+        analysis = analyze_cv(text)
+        get_client().table("cv_files").update({"analysis": analysis}).eq("id", cv_id).execute()
+        log_event("cv_analyzed", f"تم تحليل CV بنجاح", "success")
+    except Exception as e:
+        log_event("cv_analyze_error", f"خطأ في التحليل: {e}", "error")
+
 @router.get("")
 async def list_cvs():
     r = get_client().table("cv_files").select("*").order("uploaded_at", desc=True).execute()
     return r.data or []
 
 @router.post("/upload")
-async def upload_cv(file: UploadFile = File(...)):
-    ext = os.path.splitext(file.filename)[1]
+async def upload_cv(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
+    if not file.filename:
+        raise HTTPException(400, "لم يتم اختيار ملف")
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in (".pdf", ".doc", ".docx", ".png", ".jpg", ".jpeg"):
+        raise HTTPException(400, "صيغة الملف غير مدعومة. استخدمي PDF أو Word")
+
     uid = str(uuid.uuid4())
     path = f"{UPLOAD_DIR}/{uid}{ext}"
-    with open(path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
 
-    text = extract_text(path)
-    analysis = {}
+    content = await file.read()
+    with open(path, "wb") as f:
+        f.write(content)
+
     try:
-        analysis = analyze_cv(text)
+        text = extract_text(path)
     except Exception as e:
-        log_event("cv_analyze_error", f"خطأ في التحليل: {e}", "error")
+        text = ""
+        log_event("cv_parse_error", f"خطأ في قراءة الملف: {e}", "error")
 
     get_client().table("cv_files").update({"is_primary": False}).eq("is_primary", True).execute()
 
@@ -40,10 +55,17 @@ async def upload_cv(file: UploadFile = File(...)):
         "extracted_text": text,
         "uploaded_at": datetime.utcnow().isoformat(),
         "is_primary": True,
-        "analysis": analysis,
+        "analysis": {},
     }).execute()
+
+    if not r.data:
+        raise HTTPException(500, "فشل حفظ الـ CV في قاعدة البيانات")
+
+    cv_id = r.data[0]["id"]
+    background_tasks.add_task(_analyze_in_background, cv_id, text)
+
     log_event("cv_uploaded", f"تم رفع CV: {file.filename}", "success")
-    return r.data[0] if r.data else {}
+    return r.data[0]
 
 @router.post("/{cv_id}/primary")
 async def set_primary(cv_id: str):
