@@ -4,7 +4,7 @@ services:
     runtime: python
     rootDir: backend
     pythonVersion: "3.11.9"
-    buildCommand: pip install -r requirements.txt && python -m playwright install chromium --with-deps
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: ANTHROPIC_API_KEY
@@ -22,6 +22,8 @@ services:
       - key: GMAIL_REFRESH_TOKEN
         sync: false
       - key: GMAIL_SENDER_EMAIL
+        sync: false
+      - key: GMAIL_APP_PASSWORD
         sync: false
       - key: APIFY_TOKEN
         sync: false
