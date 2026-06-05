@@ -14,7 +14,7 @@ IMAN_PROFILE = """
 === ملف إيمان العبود الكامل ===
 الاسم: Eman AlAboud / إيمان العبود
 المسمى الوظيفي: Project Manager | PMP / PBA | مديرة مشاريع
-البريد الإلكتروني: Eman.mm.aboud@outlook.com
+البريد الإلكتروني: emanyaboud@gmail.com
 الجوال: +966 566132059
 الجنسية: سعودية
 

@@ -23,14 +23,18 @@ const STEPS: { id: Step; label: string; icon: React.ElementType }[] = [
 
 const DEFAULT_TEMPLATE = `Dear {hiring_manager},
 
-I am writing to express my strong interest in the {job_title} position at {company_name}. With over 10 years of experience in project management and business analysis — including 3+ years leading smart city projects at the Madinah Development Authority — I am confident I can bring significant value to your team.
+I am writing to express my strong interest in the {job_title} position at {company_name}. With over 10+ years of experience in project management and business analysis, including my work at the Madinah Development Authority on smart city initiatives, I am confident I can bring significant value to your team.
 
-My PMP and PBA certifications, combined with hands-on expertise in {relevant_skills}, align directly with your requirements.
+My PMP and PBA certifications, combined with hands-on experience in PMP, PBA, Power BI, and smart city project management, align closely with the requirements for this role. At the Madinah Development Authority, I successfully led and delivered complex projects within scope, schedule, and budget, consistently achieving high stakeholder satisfaction.
 
-I would welcome the opportunity to discuss how my background can contribute to {company_name}'s goals.
+I am particularly drawn to {company_name}'s commitment to excellence, and I believe my background in project management & smart cities positions me as an ideal candidate for this opportunity.
+
+I would welcome the chance to discuss how my experience can contribute to your organization's goals.
 
 Best regards,
-Iman Al-Aboud | Project Manager · PMP · PBA`
+Eman AlAboud
+Project Manager | PMP · PBA
+emanyaboud@gmail.com`
 
 // ─── Main Component ───────────────────────────────────────
 export default function QuickApplyWizard({ onClose }: WizardProps) {
@@ -575,9 +579,10 @@ function StepSend({ job, template, sent, sending }: {
     .replace(/{job_title}/g, job.title)
     .replace(/{company_name}/g, job.company)
     .replace(/{hiring_manager}/g, 'Hiring Manager')
-    .replace(/{relevant_skills}/g, 'project management, smart city, PMP/PBA')
+    .replace(/{relevant_skills}/g, 'PMP, PBA, Power BI, and smart city project management')
     .replace(/{years_exp}/g, '10+')
     .replace(/{industry}/g, 'project management & smart cities')
+    .replace(/{your_name}/g, 'Eman AlAboud')
 
   if (sent) return (
     <div className="py-6 text-center space-y-3">

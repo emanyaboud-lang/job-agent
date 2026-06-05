@@ -202,10 +202,20 @@ def _get_default_template(settings_data: dict) -> str:
             return r.data[0].get("body", "")
     except Exception:
         pass
-    return settings_data.get(
-        "default_template",
-        "Dear {hiring_manager},\n\nI am applying for {job_title} at {company_name}.\n\nBest regards,\nEman AlAboud | PMP · PBA"
-    )
+    return settings_data.get("default_template", """Dear {hiring_manager},
+
+I am writing to express my strong interest in the {job_title} position at {company_name}. With over 10+ years of experience in project management and business analysis, including my work at the Madinah Development Authority on smart city initiatives, I am confident I can bring significant value to your team.
+
+My PMP and PBA certifications, combined with hands-on experience in PMP, PBA, Power BI, and smart city project management, align closely with the requirements for this role. At the Madinah Development Authority, I successfully led and delivered complex projects within scope, schedule, and budget, consistently achieving high stakeholder satisfaction.
+
+I am particularly drawn to {company_name}'s commitment to excellence, and I believe my background in project management & smart cities positions me as an ideal candidate for this opportunity.
+
+I would welcome the chance to discuss how my experience can contribute to your organization's goals.
+
+Best regards,
+Eman AlAboud
+Project Manager | PMP · PBA
+emanyaboud@gmail.com""")
 
 
 def _build_body_with_signature(body: str, settings_data: dict) -> str:
