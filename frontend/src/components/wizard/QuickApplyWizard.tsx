@@ -6,7 +6,7 @@ import { cn, cityLabels, matchScoreBg } from '@/lib/utils'
 import {
   X, ChevronLeft, FileText, Mail, Search, Briefcase, Send,
   CheckCircle2, RefreshCw, Sparkles, MapPin, Star, Zap,
-  AlertCircle, ChevronRight, Edit3,
+  AlertCircle, ChevronRight, Edit3, DollarSign,
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────
@@ -539,12 +539,17 @@ function StepPick({ jobs, selected, onSelect, onRefresh }: {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">{job.company}</p>
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="text-[10px] text-slate-500 flex items-center gap-1">
                   <MapPin size={9} />{cityLabels[job.city] ?? job.city}
                 </span>
                 {job.is_vision2030 && (
                   <span className="text-[10px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded-full">رؤية 2030</span>
+                )}
+                {job.notes && (job.notes.includes('راتب') || job.notes.includes('Salary') || job.notes.includes('SAR')) && (
+                  <span className="text-[10px] bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                    <Star size={8} />{job.notes.replace('💰 ', '').split('–')[0].trim()}
+                  </span>
                 )}
               </div>
             </div>
@@ -575,30 +580,46 @@ function StepSend({ job, template, sent, sending }: {
     .replace(/{industry}/g, 'project management & smart cities')
 
   if (sent) return (
-    <div className="py-8 text-center space-y-3">
+    <div className="py-6 text-center space-y-3">
       <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto">
         <CheckCircle2 size={32} className="text-emerald-400" />
       </div>
-      <p className="text-xl font-black text-white">تم الإرسال! 🎉</p>
+      <p className="text-xl font-black text-white">تم التقديم! 🎉</p>
       <p className="text-sm text-slate-400">
-        تم تقديم طلبك لـ <span className="text-white font-medium">{job.company}</span>
+        سُجِّل طلبك لـ <span className="text-white font-medium">{job.company}</span>
       </p>
-      <p className="text-xs text-slate-500">ستصلك إشعارات بأي تحديثات على التقديم</p>
+      <div className="rounded-xl border border-sky-500/20 bg-sky-500/8 px-4 py-3 text-xs text-sky-300 text-right">
+        📧 تم إرسال إيميل تأكيد مفصّل إلى بريدك يتضمن:<br/>
+        تفاصيل الوظيفة · الراتب المتوقع · نص الرسالة المُرسَلة
+      </div>
+      {job.apply_url && (
+        <a
+          href={job.apply_url} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-violet-300 hover:text-violet-200 underline underline-offset-2 transition-colors"
+        >
+          <Zap size={12} />قدّمي أيضاً مباشرة عبر الموقع
+        </a>
+      )}
     </div>
   )
 
   return (
     <div className="space-y-4 py-2">
       {/* Job summary */}
-      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center shrink-0">
+      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center shrink-0 mt-0.5">
           <Briefcase size={16} className="text-sky-400" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-bold text-sm text-white">{job.title}</p>
           <p className="text-xs text-slate-400">{job.company} — {cityLabels[job.city] ?? job.city}</p>
+          {job.notes && (job.notes.includes('راتب') || job.notes.includes('Salary') || job.notes.includes('SAR')) && (
+            <p className="text-xs text-emerald-300 mt-1 flex items-center gap-1">
+              <Star size={10} className="shrink-0" />{job.notes.replace('💰 ', '')}
+            </p>
+          )}
         </div>
-        <span className={cn('badge text-xs mr-auto shrink-0 px-2 py-0.5 rounded-full font-bold', matchScoreBg(job.match_score))}>
+        <span className={cn('badge text-xs shrink-0 px-2 py-0.5 rounded-full font-bold', matchScoreBg(job.match_score))}>
           {job.match_score}%
         </span>
       </div>

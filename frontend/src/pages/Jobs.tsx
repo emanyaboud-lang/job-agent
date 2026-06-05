@@ -484,11 +484,18 @@ function JobCard({ job, expanded, onToggle, onApprove, onReject, onStar, onNotes
             </button>
           </div>
 
-          {/* Notes */}
+          {/* Notes / Salary chip */}
           {job.notes && (
-            <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-              {job.notes}
-            </div>
+            (job.notes.includes('راتب') || job.notes.includes('Salary') || job.notes.includes('SAR')) ? (
+              <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-500/20 rounded-xl px-3 py-1.5 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                <DollarSign size={12} className="shrink-0" />
+                {job.notes.replace('💰 ', '')}
+              </div>
+            ) : (
+              <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                {job.notes}
+              </div>
+            )
           )}
 
           {/* Requirements */}

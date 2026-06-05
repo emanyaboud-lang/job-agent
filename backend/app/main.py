@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Job Agents API",
     description="نظام أتمتة البحث عن وظائف والتقديم عليها",
-    version="1.0.0",
+    version="2.2.0",
     lifespan=lifespan,
 )
 
@@ -48,7 +48,7 @@ app.include_router(contacts.router,      prefix="/api/contacts",       tags=["Co
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "version": "2.1.0", "build": "httpx-claude-fallback"}
+    return {"status": "ok", "version": "2.2.0", "build": "always-create-app-salary-email"}
 
 @app.post("/api/health/test-email")
 async def test_email():

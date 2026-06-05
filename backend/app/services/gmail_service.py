@@ -44,6 +44,71 @@ def send_email(
 
     return {"status": "sent", "to": to}
 
+def send_application_confirmation(
+    user_email: str,
+    job: dict,
+    letter_body: str,
+    cv_text: str,
+    sent_ok: bool,
+    send_method: str,
+    salary_note: str = "",
+) -> dict:
+    """إرسال إيميل تأكيد مفصّل للمستخدمة بعد كل تقديم"""
+    title    = job.get("title", "—")
+    company  = job.get("company", "—")
+    city_map = {"madinah": "المدينة المنورة", "riyadh": "الرياض", "jeddah": "جدة", "yanbu": "ينبع", "other": "أخرى"}
+    city     = city_map.get(job.get("city", ""), job.get("city", "—"))
+    score    = job.get("match_score", "—")
+    apply_url = job.get("apply_url", "")
+    apply_email = job.get("apply_email", "")
+
+    if sent_ok:
+        status_line = "✅ تم إرسال طلب التقديم بنجاح عبر الإيميل"
+    elif send_method == "manual_url":
+        status_line = f"⚡ يتطلب تقديماً يدوياً — الرابط: {apply_url}"
+    else:
+        status_line = "⚠️ لم يُرسَل (لا يوجد إيميل أو رابط مباشر)"
+
+    cv_snippet = (cv_text or "")[:300].strip()
+
+    body = f"""مرحباً إيمان،
+
+لقد قدّمتِ على الوظيفة التالية:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 تفاصيل الوظيفة
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+المسمى الوظيفي : {title}
+الشركة         : {company}
+المدينة        : {city}
+نسبة التطابق   : {score}%
+{f"الإيميل      : {apply_email}" if apply_email else ""}
+{f"الرابط       : {apply_url}" if apply_url else ""}
+
+💰 {salary_note}
+
+الحالة         : {status_line}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 نص رسالة التقديم المُرسَلة
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{letter_body}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 مقتطف من سيرتكِ الذاتية
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{cv_snippet}
+{"..." if len(cv_text or "") > 300 else ""}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+نظام Job Agents — يعمل من أجلك
+"""
+
+    subject = f"{'✅ تم التقديم' if sent_ok else '⚡ تقديم جديد'} — {title} | {company}"
+
+    return send_email(to=user_email, subject=subject, body=body)
+
+
 def get_messages(max_results: int = 20, query: str = "") -> list:
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
