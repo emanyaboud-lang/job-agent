@@ -40,6 +40,7 @@ export interface Application {
   status: ApplicationStatus
   stage?: ApplicationStage
   letter_text: string
+  letter_subject?: string
   letter_language: LetterLanguage
   sent_at?: string
   email_status?: EmailStatus

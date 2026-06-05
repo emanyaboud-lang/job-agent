@@ -170,11 +170,13 @@ async def weekly_report():
         "daily": daily_list,
     }
 
-# ── PDF Export (simple HTML→text) ────────────────────────────
-@router.post("/export-pdf")
+# ── PDF Export — returns weekly report as downloadable JSON ──
+@router.get("/export-pdf")
 async def export_pdf():
+    from fastapi.responses import JSONResponse
+    from datetime import datetime
     data = await weekly_report()
-    return {"message": "تم تجهيز بيانات التقرير", "data": data}
+    return JSONResponse(content={"report": data, "generated_at": datetime.utcnow().isoformat()})
 
 # ── Feature 1: AI Job Summary ─────────────────────────────────
 @router.post("/job-summary")

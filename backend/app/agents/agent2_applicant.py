@@ -1,13 +1,11 @@
 """Agent 2 — المقدّم: يرسل طلبات التقديم"""
-import asyncio
 import os
 from datetime import datetime, timedelta
 from typing import Optional
 from app.services.supabase_service import get_client, log_event, get_settings
 from app.services.claude_service import generate_letter
 from app.services.gmail_service import send_email, send_application_confirmation
-
-USER_EMAIL = "emanyaboud@gmail.com"
+from app.core.config import settings as app_settings
 
 CITY_LIMITS = {
     "madinah": 5, "jeddah": 10, "riyadh": 8, "yanbu": 3, "other": 5
@@ -22,6 +20,11 @@ async def apply_to_job(job_id: str) -> dict:
         job = job_r.data
 
         settings_data = get_settings()
+        limits = settings_data.get("daily_limits", CITY_LIMITS)
+        city = job.get("city", "other")
+        if not _check_daily_limit(city, limits.get(city, CITY_LIMITS.get(city, 5))):
+            return {"success": False, "error": f"تم الوصول للحد اليومي للتقديمات في {city}"}
+
         cv_text, cv_path = _get_primary_cv()
         template = _get_default_template(settings_data)
 
@@ -116,8 +119,9 @@ async def apply_to_job(job_id: str) -> dict:
         # ── إرسال إيميل تأكيد للمستخدمة دائماً ──
         try:
             salary_note = _extract_salary(job)
+            user_email = app_settings.GMAIL_SENDER_EMAIL or "emanyaboud@gmail.com"
             send_application_confirmation(
-                user_email=USER_EMAIL,
+                user_email=user_email,
                 job=job,
                 letter_body=letter["body"],
                 cv_text=cv_text,
@@ -182,7 +186,7 @@ def _get_primary_cv():
             return r.data[0].get("extracted_text", ""), r.data[0].get("file_path", "")
     except Exception:
         pass
-    fallback_path = os.path.join(os.path.dirname(__file__), '..', '..', 'cv_iman.txt')
+    fallback_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'cv_iman.txt')
     try:
         with open(fallback_path, encoding='utf-8') as f:
             return f.read(), ""

@@ -40,7 +40,7 @@ async def backup():
     sb = get_client()
     jobs = sb.table("jobs").select("*").execute().data or []
     apps = sb.table("applications").select("*").execute().data or []
-    contacts = sb.table("contacts").select("*").execute().data or []
+    contacts = sb.table("recruiter_contacts").select("*").execute().data or []
     cv_files = sb.table("cv_files").select("id,version_name,file_name,uploaded_at,is_primary").execute().data or []
     data = {
         "exported_at": datetime.utcnow().isoformat(),

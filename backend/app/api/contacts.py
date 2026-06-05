@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from app.services.supabase_service import get_client
 from datetime import datetime
 

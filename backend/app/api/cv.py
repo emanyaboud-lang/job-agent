@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 import os, shutil, uuid
 from datetime import datetime
 from app.services.supabase_service import get_client, log_event
@@ -6,7 +6,8 @@ from app.services.cv_parser import extract_text
 from app.services.claude_service import analyze_cv, cv_chat, analyze_skill_gap
 
 router = APIRouter()
-UPLOAD_DIR = "/tmp/cv_files"
+import tempfile
+UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "cv_files")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def _analyze_in_background(cv_id: str, text: str):

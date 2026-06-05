@@ -1,5 +1,4 @@
 from fastapi import APIRouter, BackgroundTasks
-import asyncio
 from datetime import datetime
 from app.services.supabase_service import get_client, log_event
 

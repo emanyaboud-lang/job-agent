@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from typing import Optional
 from app.services.supabase_service import get_client, log_event
 from app.agents.agent2_applicant import apply_to_job

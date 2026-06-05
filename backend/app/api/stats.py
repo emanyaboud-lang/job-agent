@@ -47,8 +47,9 @@ async def overview():
         except Exception:
             pass
 
-        non_rejected = total - status_counts.get("rejected", 0)
-        response_rate = ((status_counts.get("reviewing", 0) + status_counts.get("interview", 0) + status_counts.get("offer", 0)) / non_rejected * 100) if non_rejected else 0
+        sent_total = status_counts.get("sent", 0) + status_counts.get("reviewing", 0) + status_counts.get("interview", 0) + status_counts.get("offer", 0) + status_counts.get("rejected", 0)
+        responded = status_counts.get("reviewing", 0) + status_counts.get("interview", 0) + status_counts.get("offer", 0)
+        response_rate = round(responded / sent_total * 100, 1) if sent_total > 0 else 0
 
         return {
             "total_applications": total,
